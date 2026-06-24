@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DevShield{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="shield-icon">🛡️</span>
+            <span>DevShield</span>
+        </div>
+        <div class="nav-links">
+            <a href="{{ url_for('main.dashboard') }}" class="nav-link">Dashboard</a>
+            <a href="{{ url_for('main.new_project') }}" class="nav-link">+ Nouveau projet</a>
+            <span class="nav-user">{{ current_user.username }}</span>
+            <a href="{{ url_for('auth.logout') }}" class="nav-link nav-logout">Déconnexion</a>
+        </div>
+    </nav>
+    {% endif %}
+
+    <main class="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>

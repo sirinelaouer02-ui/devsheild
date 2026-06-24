@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}{{ project.name }} — DevShield{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>{{ project.name }}</h1>
+        <p class="project-url">{{ project.url }}</p>
+    </div>
+    <div class="header-actions">
+        <form method="POST" action="{{ url_for('main.run_scan', project_id=project.id) }}">
+            <button type="submit" class="btn btn-primary">🔍 Lancer un scan</button>
+        </form>
+        <form method="POST" action="{{ url_for('main.delete_project', project_id=project.id) }}"
+              onsubmit="return confirm('Supprimer ce projet et tous ses scans ?')">
+            <button type="submit" class="btn btn-danger">Supprimer</button>
+        </form>
+    </div>
+</div>
+
+<!-- Dernier score -->
+{% if project.security_score is not none %}
+<div class="score-banner score-banner-{{ score_to_color(project.security_score) }}">
+    <div class="score-banner-grade">{{ score_to_grade(project.security_score) }}</div>
+    <div>
+        <div class="score-banner-number">{{ project.security_score }}/100</div>
+        <div class="score-banner-label">Score de sécurité actuel</div>
+    </div>
+    <div class="score-bar-container">
+        <div class="score-bar" style="width: {{ project.security_score }}%; background: var(--color-{{ score_to_color(project.security_score) }});"></div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Tickets ouverts -->
+{% set open_tickets = tickets | selectattr('status', 'equalto', 'open') | list %}
+{% if open_tickets %}
+<section class="section">
+    <h2>Tickets de sécurité ouverts ({{ open_tickets|length }})</h2>
+    <div class="tickets-list">
+        {% for ticket in open_tickets %}
+        <div class="ticket-card ticket-{{ ticket.severity }}">
+            <div class="ticket-header">
+                <span class="severity-badge severity-{{ ticket.severity }}">{{ ticket.severity }}</span>
+                <h3 class="ticket-title">{{ ticket.title }}</h3>
+            </div>
+            <p class="ticket-description">{{ ticket.description }}</p>
+            <form method="POST" action="{{ url_for('main.resolve_ticket', ticket_id=ticket.id) }}">
+                <button type="submit" class="btn btn-sm btn-outline">✓ Marquer comme résolu</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Historique des scans -->
+<section class="section">
+    <h2>Historique des scans</h2>
+    {% if scans %}
+    {% for scan in scans %}
+    <div class="scan-card">
+        <div class="scan-header">
+            <div>
+                <span class="scan-date">{{ scan.created_at.strftime('%d/%m/%Y à %H:%M') }}</span>
+                <span class="scan-status status-{{ scan.status }}">{{ scan.status }}</span>
+            </div>
+            {% if scan.score is not none %}
+            <span class="scan-score score-{{ score_to_color(scan.score) }}">
+                {{ score_to_grade(scan.score) }} — {{ scan.score }}/100
+            </span>
+            {% endif %}
+        </div>
+
+        {% if scan.parsed_results and scan.parsed_results.checks %}
+        <div class="checks-grid">
+            {% for check in scan.parsed_results.checks %}
+            <div class="check-item check-{{ check.status }}">
+                <span class="check-icon">
+                    {% if check.status == 'pass' %}✓{% elif check.status == 'fail' %}✗{% else %}⚠{% endif %}
+                </span>
+                <div>
+                    <div class="check-name">{{ check.name }}</div>
+                    <div class="check-detail">{{ check.detail }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <p class="empty-text">Aucun scan effectué. Lance ton premier scan !</p>
+    {% endif %}
+</section>
+{% endblock %}

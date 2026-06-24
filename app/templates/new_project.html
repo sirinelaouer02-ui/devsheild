@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Nouveau projet — DevShield{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Nouveau projet</h1>
+        <p class="page-subtitle">Ajoute une application à surveiller</p>
+    </div>
+</div>
+
+<div class="form-card">
+    <form method="POST" action="{{ url_for('main.new_project') }}">
+        <div class="form-group">
+            <label for="name">Nom du projet *</label>
+            <input type="text" id="name" name="name" required placeholder="Ex: Mon API backend">
+        </div>
+        <div class="form-group">
+            <label for="url">URL à analyser *</label>
+            <input type="url" id="url" name="url" required placeholder="https://exemple.com">
+            <small class="form-hint">L'URL complète de l'application ou de l'API à scanner.</small>
+        </div>
+        <div class="form-group">
+            <label for="description">Description (optionnel)</label>
+            <textarea id="description" name="description" rows="3" placeholder="Décris brièvement ce projet..."></textarea>
+        </div>
+        <div class="form-actions">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline">Annuler</a>
+            <button type="submit" class="btn btn-primary">Créer le projet</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

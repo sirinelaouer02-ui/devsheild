@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — DevShield{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Mes projets</h1>
+        <p class="page-subtitle">Vue d'ensemble de la sécurité de tes applications</p>
+    </div>
+    <a href="{{ url_for('main.new_project') }}" class="btn btn-primary">+ Nouveau projet</a>
+</div>
+
+<!-- Stats globales -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ projects|length }}</div>
+        <div class="stat-label">Projets</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value stat-warning">{{ total_tickets }}</div>
+        <div class="stat-label">Tickets ouverts</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value stat-danger">{{ critical_tickets }}</div>
+        <div class="stat-label">Tickets critiques</div>
+    </div>
+    <div class="stat-card">
+        {% if projects %}
+            {% set scores = projects | selectattr('security_score') | map(attribute='security_score') | list %}
+            {% if scores %}
+                <div class="stat-value">{{ (scores | sum / scores | length) | round | int }}</div>
+            {% else %}
+                <div class="stat-value stat-muted">—</div>
+            {% endif %}
+        {% else %}
+            <div class="stat-value stat-muted">—</div>
+        {% endif %}
+        <div class="stat-label">Score moyen</div>
+    </div>
+</div>
+
+<!-- Liste des projets -->
+{% if projects %}
+<div class="projects-grid">
+    {% for project in projects %}
+    <div class="project-card">
+        <div class="project-card-header">
+            <div>
+                <h2 class="project-name">{{ project.name }}</h2>
+                <p class="project-url">{{ project.url }}</p>
+            </div>
+            {% if project.security_score is not none %}
+            <div class="score-badge score-{{ score_to_color(project.security_score) }}">
+                <span class="score-grade">{{ score_to_grade(project.security_score) }}</span>
+                <span class="score-number">{{ project.security_score }}/100</span>
+            </div>
+            {% else %}
+            <div class="score-badge score-none">
+                <span class="score-grade">?</span>
+                <span class="score-number">Non scanné</span>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if project.description %}
+        <p class="project-description">{{ project.description }}</p>
+        {% endif %}
+
+        <div class="project-card-footer">
+            <a href="{{ url_for('main.project_detail', project_id=project.id) }}" class="btn btn-outline">
+                Voir le détail
+            </a>
+            <form method="POST" action="{{ url_for('main.run_scan', project_id=project.id) }}" style="display:inline;">
+                <button type="submit" class="btn btn-primary">Lancer un scan</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">🔍</div>
+    <h2>Aucun projet pour l'instant</h2>
+    <p>Ajoute ton premier projet pour commencer à analyser sa sécurité.</p>
+    <a href="{{ url_for('main.new_project') }}" class="btn btn-primary">Créer mon premier projet</a>
+</div>
+{% endif %}
+{% endblock %}
