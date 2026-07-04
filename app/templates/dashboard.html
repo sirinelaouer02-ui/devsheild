@@ -1,20 +1,20 @@
 {% extends 'base.html' %}
-{% block title %}Dashboard — DevShield{% endblock %}
+{% block title %}Dashboard — DevShield Lenergy{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <div>
-        <h1>Mes projets</h1>
-        <p class="page-subtitle">Vue d'ensemble de la sécurité de tes applications</p>
+        <h1>🛡️ DevShield <span class="lenergy-tag">Lenergy Smart</span></h1>
+        <p class="page-subtitle">Supervision de sécurité & conformité NIS2 — {{ projects|length }} application(s) surveillée(s)</p>
     </div>
-    <a href="{{ url_for('main.new_project') }}" class="btn btn-primary">+ Nouveau projet</a>
+    <a href="{{ url_for('main.new_project') }}" class="btn btn-primary">+ Ajouter une application</a>
 </div>
 
 <!-- Stats globales -->
 <div class="stats-grid">
     <div class="stat-card">
         <div class="stat-value">{{ projects|length }}</div>
-        <div class="stat-label">Projets</div>
+        <div class="stat-label">Applications</div>
     </div>
     <div class="stat-card">
         <div class="stat-value stat-warning">{{ total_tickets }}</div>
@@ -25,19 +25,25 @@
         <div class="stat-label">Tickets critiques</div>
     </div>
     <div class="stat-card">
-        {% if projects %}
-            {% set scores = projects | selectattr('security_score') | map(attribute='security_score') | list %}
-            {% if scores %}
-                <div class="stat-value">{{ (scores | sum / scores | length) | round | int }}</div>
-            {% else %}
-                <div class="stat-value stat-muted">—</div>
-            {% endif %}
+        {% if avg_nis2 is not none %}
+            <div class="stat-value {% if avg_nis2 >= 75 %}stat-green{% elif avg_nis2 >= 50 %}stat-warning{% else %}stat-danger{% endif %}">
+                {{ avg_nis2 }}%
+            </div>
         {% else %}
             <div class="stat-value stat-muted">—</div>
         {% endif %}
-        <div class="stat-label">Score moyen</div>
+        <div class="stat-label">Conformité NIS2 moyenne</div>
     </div>
 </div>
+
+<!-- Alerte NIS2 si problème -->
+{% if avg_nis2 is not none and avg_nis2 < 75 %}
+<div class="alert alert-danger">
+    ⚠️ <strong>Attention :</strong> La conformité NIS2 moyenne est de {{ avg_nis2 }}%.
+    Lenergy Smart est soumis à NIS2 en tant qu'opérateur de services numériques.
+    Des actions correctives sont requises.
+</div>
+{% endif %}
 
 <!-- Liste des projets -->
 {% if projects %}
@@ -66,12 +72,19 @@
         <p class="project-description">{{ project.description }}</p>
         {% endif %}
 
+        <!-- NIS2 mini badge -->
+        {% if project.latest_scan and project.latest_scan.results %}
+        {% endif %}
+
         <div class="project-card-footer">
-            <a href="{{ url_for('main.project_detail', project_id=project.id) }}" class="btn btn-outline">
-                Voir le détail
-            </a>
-            <form method="POST" action="{{ url_for('main.run_scan', project_id=project.id) }}" style="display:inline;">
-                <button type="submit" class="btn btn-primary">Lancer un scan</button>
+            <a href="{{ url_for('main.project_detail', project_id=project.id) }}"
+               class="btn btn-outline">Détail</a>
+            <a href="{{ url_for('main.nis2_report', project_id=project.id) }}"
+               class="btn btn-outline">Rapport NIS2</a>
+            <form method="POST"
+                  action="{{ url_for('main.run_scan', project_id=project.id) }}"
+                  style="display:inline;">
+                <button type="submit" class="btn btn-primary">🔍 Scanner</button>
             </form>
         </div>
     </div>
@@ -81,9 +94,11 @@
 {% else %}
 <div class="empty-state">
     <div class="empty-icon">🔍</div>
-    <h2>Aucun projet pour l'instant</h2>
-    <p>Ajoute ton premier projet pour commencer à analyser sa sécurité.</p>
-    <a href="{{ url_for('main.new_project') }}" class="btn btn-primary">Créer mon premier projet</a>
+    <h2>Aucune application surveillée</h2>
+    <p>Ajoute une application Lenergy Smart pour commencer l'analyse de sécurité.</p>
+    <a href="{{ url_for('main.new_project') }}" class="btn btn-primary">
+        Ajouter ma première application
+    </a>
 </div>
 {% endif %}
 {% endblock %}

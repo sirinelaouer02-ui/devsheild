@@ -8,17 +8,19 @@
         <p class="project-url">{{ project.url }}</p>
     </div>
     <div class="header-actions">
+        <a href="{{ url_for('main.nis2_report', project_id=project.id) }}"
+           class="btn btn-outline">📋 Rapport NIS2</a>
         <form method="POST" action="{{ url_for('main.run_scan', project_id=project.id) }}">
             <button type="submit" class="btn btn-primary">🔍 Lancer un scan</button>
         </form>
         <form method="POST" action="{{ url_for('main.delete_project', project_id=project.id) }}"
-              onsubmit="return confirm('Supprimer ce projet et tous ses scans ?')">
+              onsubmit="return confirm('Supprimer ce projet ?')">
             <button type="submit" class="btn btn-danger">Supprimer</button>
         </form>
     </div>
 </div>
 
-<!-- Dernier score -->
+<!-- Score actuel -->
 {% if project.security_score is not none %}
 <div class="score-banner score-banner-{{ score_to_color(project.security_score) }}">
     <div class="score-banner-grade">{{ score_to_grade(project.security_score) }}</div>
@@ -27,9 +29,22 @@
         <div class="score-banner-label">Score de sécurité actuel</div>
     </div>
     <div class="score-bar-container">
-        <div class="score-bar" style="width: {{ project.security_score }}%; background: var(--color-{{ score_to_color(project.security_score) }});"></div>
+        <div class="score-bar"
+             style="width:{{ project.security_score }}%;
+                    background:var(--color-{{ score_to_color(project.security_score) }});">
+        </div>
     </div>
 </div>
+{% endif %}
+
+<!-- GRAPHIQUE D'ÉVOLUTION -->
+{% if chart_labels and chart_labels != '[]' %}
+<section class="section">
+    <h2>📈 Évolution du score dans le temps</h2>
+    <div class="chart-container">
+        <canvas id="scoreChart"></canvas>
+    </div>
+</section>
 {% endif %}
 
 <!-- Tickets ouverts -->
@@ -41,12 +56,17 @@
         {% for ticket in open_tickets %}
         <div class="ticket-card ticket-{{ ticket.severity }}">
             <div class="ticket-header">
-                <span class="severity-badge severity-{{ ticket.severity }}">{{ ticket.severity }}</span>
+                <span class="severity-badge severity-{{ ticket.severity }}">
+                    {{ ticket.severity }}
+                </span>
                 <h3 class="ticket-title">{{ ticket.title }}</h3>
             </div>
             <p class="ticket-description">{{ ticket.description }}</p>
-            <form method="POST" action="{{ url_for('main.resolve_ticket', ticket_id=ticket.id) }}">
-                <button type="submit" class="btn btn-sm btn-outline">✓ Marquer comme résolu</button>
+            <form method="POST"
+                  action="{{ url_for('main.resolve_ticket', ticket_id=ticket.id) }}">
+                <button type="submit" class="btn btn-sm btn-outline">
+                    ✓ Marquer comme résolu
+                </button>
             </form>
         </div>
         {% endfor %}
@@ -59,16 +79,23 @@
     <h2>Historique des scans</h2>
     {% if scans %}
     {% for scan in scans %}
-    <div class="scan-card">
+    <div class="scan-item">
         <div class="scan-header">
-            <div>
-                <span class="scan-date">{{ scan.created_at.strftime('%d/%m/%Y à %H:%M') }}</span>
-                <span class="scan-status status-{{ scan.status }}">{{ scan.status }}</span>
-            </div>
-            {% if scan.score is not none %}
-            <span class="scan-score score-{{ score_to_color(scan.score) }}">
-                {{ score_to_grade(scan.score) }} — {{ scan.score }}/100
-            </span>
+            {% if scan.triggered_by and scan.triggered_by.startswith('auto:') %}
+                <span class="badge badge-auto">⚙️ Automatique — CI/CD</span>
+                <span class="scan-origin">Déclenché par GitHub Actions · commit {{ scan.triggered_by.split(':')[-1] }}</span>
+            {% elif scan.triggered_by and scan.triggered_by.startswith('manuel:') %}
+                <span class="badge badge-manual">🖱️ Manuel</span>
+                <span class="scan-origin">Lancé par {{ scan.triggered_by.split(':')[-1] }}</span>
+            {% else %}
+                <span class="scan-origin">Origine inconnue</span>
+            {% endif %}
+        </div>
+        <div class="scan-body">
+            <span class="scan-date">{{ scan.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+            <span class="scan-score">{{ scan.score }}/100</span>
+            {% if scan.parsed_results %}
+            <span class="scan-nis2">NIS2 : {{ scan.parsed_results.nis2_score }}%</span>
             {% endif %}
         </div>
 
@@ -77,7 +104,9 @@
             {% for check in scan.parsed_results.checks %}
             <div class="check-item check-{{ check.status }}">
                 <span class="check-icon">
-                    {% if check.status == 'pass' %}✓{% elif check.status == 'fail' %}✗{% else %}⚠{% endif %}
+                    {% if check.status == 'pass' %}✓
+                    {% elif check.status == 'fail' %}✗
+                    {% else %}⚠{% endif %}
                 </span>
                 <div>
                     <div class="check-name">{{ check.name }}</div>
@@ -93,4 +122,71 @@
     <p class="empty-text">Aucun scan effectué. Lance ton premier scan !</p>
     {% endif %}
 </section>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const labels  = {{ chart_labels | safe }};
+const scores  = {{ chart_scores | safe }};
+const nis2    = {{ chart_nis2   | safe }};
+
+if (labels.length > 0) {
+    const ctx = document.getElementById('scoreChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Score de sécurité',
+                    data: scores,
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99,102,241,0.1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#6366f1',
+                    pointRadius: 5,
+                    tension: 0.3,
+                    fill: true
+                },
+                {
+                    label: 'Conformité NIS2 (%)',
+                    data: nis2,
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34,197,94,0.08)',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#22c55e',
+                    pointRadius: 5,
+                    tension: 0.3,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    labels: { color: '#e2e8f0', font: { size: 13 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => `${ctx.dataset.label} : ${ctx.parsed.y}`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#8892a4' },
+                    grid:  { color: '#2d3050' }
+                },
+                y: {
+                    min: 0,
+                    max: 100,
+                    ticks: { color: '#8892a4' },
+                    grid:  { color: '#2d3050' }
+                }
+            }
+        }
+    });
+}
+</script>
 {% endblock %}

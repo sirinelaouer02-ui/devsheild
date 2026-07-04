@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: Arial, sans-serif;
+        font-size: 11px;
+        color: #1a1a2e;
+        background: #fff;
+    }
+
+    /* EN-TÊTE */
+    .header {
+        background: #1a1d2e;
+        color: #fff;
+        padding: 28px 36px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .header-left h1 { font-size: 22px; font-weight: 700; color: #6366f1; }
+    .header-left h2 { font-size: 13px; font-weight: 400; color: #8892a4; margin-top: 4px; }
+    .header-right { text-align: right; font-size: 10px; color: #8892a4; line-height: 1.8; }
+    .header-right strong { color: #e2e8f0; }
+
+    /* CORPS */
+    .body { padding: 28px 36px; }
+
+    /* BANDEAU SCORE NIS2 */
+    .score-banner {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        padding: 20px 24px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        border: 1px solid;
+    }
+    .score-banner.green  { background: #f0fdf4; border-color: #86efac; }
+    .score-banner.orange { background: #fff7ed; border-color: #fdba74; }
+    .score-banner.red    { background: #fef2f2; border-color: #fca5a5; }
+
+    .score-big {
+        font-size: 48px;
+        font-weight: 900;
+        line-height: 1;
+    }
+    .score-banner.green  .score-big  { color: #16a34a; }
+    .score-banner.orange .score-big  { color: #ea580c; }
+    .score-banner.red    .score-big  { color: #dc2626; }
+
+    .score-info h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .score-info p  { font-size: 10px; color: #6b7280; line-height: 1.5; }
+
+    .score-bar-wrap {
+        flex: 1;
+        height: 10px;
+        background: #e5e7eb;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+    .score-bar-fill {
+        height: 100%;
+        border-radius: 5px;
+    }
+    .green  .score-bar-fill { background: #16a34a; }
+    .orange .score-bar-fill { background: #ea580c; }
+    .red    .score-bar-fill { background: #dc2626; }
+
+    /* SECTIONS */
+    .section { margin-bottom: 24px; }
+    .section-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #1a1d2e;
+        border-bottom: 2px solid #6366f1;
+        padding-bottom: 6px;
+        margin-bottom: 12px;
+    }
+
+    /* CRITÈRES NIS2 */
+    .criterion {
+        padding: 12px 16px;
+        border-radius: 6px;
+        border-left: 4px solid;
+        margin-bottom: 8px;
+        background: #f9fafb;
+    }
+    .criterion.conforme     { border-left-color: #16a34a; }
+    .criterion.partiel      { border-left-color: #ea580c; }
+    .criterion.non_conforme { border-left-color: #dc2626; }
+
+    .criterion-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 4px;
+    }
+    .badge {
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+    }
+    .badge.conforme     { background: #dcfce7; color: #16a34a; }
+    .badge.partiel      { background: #ffedd5; color: #ea580c; }
+    .badge.non_conforme { background: #fee2e2; color: #dc2626; }
+
+    .criterion-title { font-size: 11px; font-weight: 700; }
+    .criterion-desc  { font-size: 10px; color: #6b7280; margin-top: 2px; }
+
+    /* CHECKS DÉTAILLÉS */
+    .checks-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 8px;
+    }
+    .checks-table th {
+        background: #f3f4f6;
+        padding: 7px 10px;
+        text-align: left;
+        font-size: 10px;
+        color: #6b7280;
+        font-weight: 600;
+    }
+    .checks-table td {
+        padding: 7px 10px;
+        font-size: 10px;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: top;
+    }
+    .check-pass { color: #16a34a; font-weight: 700; }
+    .check-fail { color: #dc2626; font-weight: 700; }
+    .check-warn { color: #ea580c; font-weight: 700; }
+
+    /* RECOMMANDATIONS */
+    .reco {
+        padding: 10px 14px;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        border-left: 4px solid;
+    }
+    .reco.critical { background: #fef2f2; border-left-color: #dc2626; }
+    .reco.medium   { background: #fff7ed; border-left-color: #ea580c; }
+    .reco-priority { font-size: 9px; font-weight: 700; color: #9ca3af; display: block; margin-bottom: 2px; }
+    .reco strong   { font-size: 11px; display: block; margin-bottom: 2px; }
+    .reco p        { font-size: 10px; color: #6b7280; margin: 0; }
+
+    /* PIED DE PAGE */
+    .footer {
+        margin-top: 32px;
+        padding-top: 12px;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        font-size: 9px;
+        color: #9ca3af;
+    }
+
+    /* INFO PROJET */
+    .project-info {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+    .info-card {
+        flex: 1;
+        padding: 12px 16px;
+        background: #f9fafb;
+        border-radius: 6px;
+        border: 1px solid #e5e7eb;
+    }
+    .info-card .label { font-size: 9px; color: #9ca3af; font-weight: 600; text-transform: uppercase; }
+    .info-card .value { font-size: 13px; font-weight: 700; margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<!-- EN-TÊTE -->
+<div class="header">
+    <div class="header-left">
+        <h1>🛡️ DevShield</h1>
+        <h2>Rapport de conformité NIS2 — Lenergy Smart</h2>
+    </div>
+    <div class="header-right">
+        <div><strong>Application :</strong> {{ project.name }}</div>
+        <div><strong>URL :</strong> {{ project.url }}</div>
+        <div><strong>Généré le :</strong> {{ generated_at }}</div>
+        <div><strong>Confidentiel</strong> — Usage interne Lenergy Smart</div>
+    </div>
+</div>
+
+<div class="body">
+
+    <!-- INFOS PROJET -->
+    <div class="project-info">
+        <div class="info-card">
+            <div class="label">Application</div>
+            <div class="value">{{ project.name }}</div>
+        </div>
+        <div class="info-card">
+            <div class="label">Score de sécurité</div>
+            <div class="value">
+                {% if scan and scan.score is not none %}
+                    {{ scan.score }}/100
+                {% else %}
+                    N/A
+                {% endif %}
+            </div>
+        </div>
+        <div class="info-card">
+            <div class="label">Conformité NIS2</div>
+            <div class="value">{{ nis2_score if nis2_score is not none else 'N/A' }}%</div>
+        </div>
+        <div class="info-card">
+            <div class="label">Date du scan</div>
+            <div class="value">
+                {% if scan %}
+                    {{ scan.created_at.strftime('%d/%m/%Y') }}
+                {% else %}
+                    Aucun scan
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if nis2_score is not none %}
+    <!-- BANDEAU SCORE NIS2 -->
+    {% if nis2_score >= 75 %}{% set color = 'green' %}
+    {% elif nis2_score >= 50 %}{% set color = 'orange' %}
+    {% else %}{% set color = 'red' %}{% endif %}
+
+    <div class="score-banner {{ color }}">
+        <div class="score-big">{{ nis2_score }}%</div>
+        <div class="score-info">
+            <h3>Conformité NIS2 globale</h3>
+            <p>
+                La directive NIS2 (Network and Information Security) est obligatoire<br>
+                pour les opérateurs de services numériques comme Lenergy Smart.<br>
+                Article 21 impose des mesures techniques de cybersécurité.
+            </p>
+        </div>
+        <div class="score-bar-wrap">
+            <div class="score-bar-fill" style="width: {{ nis2_score }}%"></div>
+        </div>
+    </div>
+
+    <!-- CRITÈRES NIS2 -->
+    <div class="section">
+        <div class="section-title">Analyse par critère NIS2</div>
+        {% for criterion in nis2_details %}
+        <div class="criterion {{ criterion.status }}">
+            <div class="criterion-header">
+                <span class="badge {{ criterion.status }}">
+                    {% if criterion.status == 'conforme' %}✓ Conforme
+                    {% elif criterion.status == 'partiel' %}⚠ Partiel
+                    {% else %}✗ Non conforme{% endif %}
+                </span>
+                <span class="criterion-title">{{ criterion.label }}</span>
+            </div>
+            <div class="criterion-desc">{{ criterion.description }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% endif %}
+
+    <!-- CHECKS DÉTAILLÉS -->
+    {% if scan_results and scan_results.checks %}
+    <div class="section">
+        <div class="section-title">Détail des vérifications techniques</div>
+        <table class="checks-table">
+            <thead>
+                <tr>
+                    <th>Vérification</th>
+                    <th>Statut</th>
+                    <th>Détail</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for check in scan_results.checks %}
+                <tr>
+                    <td><strong>{{ check.name }}</strong></td>
+                    <td>
+                        {% if check.status == 'pass' %}
+                            <span class="check-pass">✓ OK</span>
+                        {% elif check.status == 'fail' %}
+                            <span class="check-fail">✗ Échec</span>
+                        {% else %}
+                            <span class="check-warn">⚠ Attention</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ check.detail }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- RECOMMANDATIONS -->
+    {% if nis2_details %}
+    {% set non_conformes = nis2_details | selectattr('status', 'equalto', 'non_conforme') | list %}
+    {% set partiels = nis2_details | selectattr('status', 'equalto', 'partiel') | list %}
+
+    {% if non_conformes or partiels %}
+    <div class="section">
+        <div class="section-title">Recommandations prioritaires</div>
+
+        {% for item in non_conformes %}
+        <div class="reco critical">
+            <span class="reco-priority">PRIORITÉ HAUTE — ACTION REQUISE</span>
+            <strong>{{ item.label }}</strong>
+            <p>{{ item.description }}</p>
+        </div>
+        {% endfor %}
+
+        {% for item in partiels %}
+        <div class="reco medium">
+            <span class="reco-priority">PRIORITÉ MOYENNE</span>
+            <strong>{{ item.label }}</strong>
+            <p>{{ item.description }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <!-- PIED DE PAGE -->
+    <div class="footer">
+        <span>DevShield — Plateforme DevSecOps interne Lenergy Smart</span>
+        <span>Rapport généré le {{ generated_at }} — Confidentiel</span>
+    </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% block title %}Rapport NIS2 — {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Rapport de conformité NIS2</h1>
+        <p class="page-subtitle">{{ project.name }} — {{ project.url }}</p>
+    </div>
+    <div class="header-actions">
+        <a href="{{ url_for('main.project_detail', project_id=project.id) }}"
+           class="btn btn-outline">← Retour</a>
+        {% if scan %}
+        <a href="{{ url_for('main.nis2_pdf', project_id=project.id) }}"
+           class="btn btn-outline">📄 Télécharger le PDF</a>
+        {% endif %}
+        <form method="POST"
+              action="{{ url_for('main.run_scan', project_id=project.id) }}">
+            <button type="submit" class="btn btn-primary">🔍 Mettre à jour le scan</button>
+        </form>
+    </div>
+</div>
+
+{% if not scan %}
+<div class="empty-state">
+    <div class="empty-icon">📋</div>
+    <h2>Aucun scan disponible</h2>
+    <p>Lance un scan pour générer le rapport NIS2.</p>
+    <form method="POST" action="{{ url_for('main.run_scan', project_id=project.id) }}">
+        <button type="submit" class="btn btn-primary">Lancer le premier scan</button>
+    </form>
+</div>
+
+{% else %}
+
+<!-- Score NIS2 global -->
+<div class="nis2-banner {% if nis2_score >= 75 %}nis2-green{% elif nis2_score >= 50 %}nis2-orange{% else %}nis2-red{% endif %}">
+    <div class="nis2-banner-left">
+        <div class="nis2-score-big">{{ nis2_score }}%</div>
+        <div class="nis2-score-label">Conformité NIS2</div>
+    </div>
+    <div class="nis2-banner-right">
+        <p><strong>Directive NIS2 (Network and Information Security)</strong></p>
+        <p>Obligatoire pour les opérateurs de services numériques comme Lenergy Smart.
+           Article 21 impose des mesures techniques de cybersécurité.</p>
+        <p class="nis2-scan-date">
+            Dernier scan : {{ scan.created_at.strftime('%d/%m/%Y à %H:%M') }}
+        </p>
+    </div>
+    <div class="nis2-bar-container">
+        <div class="nis2-bar" style="width: {{ nis2_score }}%"></div>
+    </div>
+</div>
+
+<!-- Détail des critères NIS2 -->
+<section class="section">
+    <h2>Analyse par critère NIS2</h2>
+
+    {% if nis2_details %}
+    <div class="nis2-criteria-list">
+        {% for criterion in nis2_details %}
+        <div class="nis2-criterion nis2-criterion-{{ criterion.status }}">
+            <div class="nis2-criterion-header">
+                <div class="nis2-status-badge nis2-badge-{{ criterion.status }}">
+                    {% if criterion.status == 'conforme' %}✓ Conforme
+                    {% elif criterion.status == 'partiel' %}⚠ Partiel
+                    {% else %}✗ Non conforme{% endif %}
+                </div>
+                <h3 class="nis2-criterion-title">{{ criterion.label }}</h3>
+            </div>
+            <p class="nis2-criterion-desc">{{ criterion.description }}</p>
+            <div class="nis2-checks-involved">
+                <span class="nis2-checks-label">Checks impliqués :</span>
+                {% for check in criterion.checks %}
+                <span class="nis2-check-tag">{{ check }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <p class="empty-text">Relance un scan pour obtenir l'analyse NIS2 détaillée.</p>
+    {% endif %}
+</section>
+
+<!-- Recommandations -->
+<section class="section">
+    <h2>Recommandations prioritaires</h2>
+    <div class="recommendations-list">
+        {% set non_conformes = nis2_details | selectattr('status', 'equalto', 'non_conforme') | list %}
+        {% set partiels = nis2_details | selectattr('status', 'equalto', 'partiel') | list %}
+
+        {% if non_conformes %}
+            {% for item in non_conformes %}
+            <div class="recommendation recommendation-critical">
+                <span class="reco-priority">PRIORITÉ HAUTE</span>
+                <strong>{{ item.label }}</strong>
+                <p>{{ item.description }}</p>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if partiels %}
+            {% for item in partiels %}
+            <div class="recommendation recommendation-medium">
+                <span class="reco-priority">PRIORITÉ MOYENNE</span>
+                <strong>{{ item.label }}</strong>
+                <p>{{ item.description }}</p>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if not non_conformes and not partiels %}
+        <div class="recommendation recommendation-ok">
+            ✓ Tous les critères NIS2 analysés sont conformes. Maintiens cette conformité
+            en relançant des scans régulièrement.
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+{% endif %}
+{% endblock %}
