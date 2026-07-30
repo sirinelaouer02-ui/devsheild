@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% block title %}Scan rapide — DevShield{% endblock %}
+{% block topbar_title %}Scan rapide{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Scan rapide</h1>
+    <p class="page-subtitle">Analysez n'importe quelle URL sans créer de projet</p>
+  </div>
+</div>
+
+<div class="form-card" style="max-width:700px; margin-bottom:28px;">
+  <div class="form-card-header">
+    <div class="form-card-icon"><i class="fas fa-bolt"></i></div>
+    <div>
+      <h2>Analyse ponctuelle</h2>
+      <p>Aucune donnée n'est conservée si vous ne sauvegardez pas le résultat en projet.</p>
+    </div>
+  </div>
+  
+  <form method="POST" action="{{ url_for('main.quick_scan') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="form-group">
+      <label for="domain">URL à analyser</label>
+      <div style="display: flex; gap: 8px; align-items: center; max-width: 100%;">
+        <select id="protocol" name="protocol" style="padding: 10px 12px; background: var(--color-surface-2); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text); font-size: 1rem; width: 100px; flex-shrink: 0;">
+          <option value="https://" selected>https://</option>
+          <option value="http://">http://</option>
+        </select>
+        <input type="text" id="domain" name="domain" required
+               value="{{ domain_scanned or '' }}"
+               placeholder="exemple.com"
+               style="flex: 1; padding: 10px 14px; background: var(--color-surface-2); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text); font-size: 1rem; min-width: 0; width: 100%;">
+      </div>
+      <small class="form-hint">Sélectionnez le protocole et saisissez le domaine (ex: google.com).</small>
+    </div>
+    <button type="submit" class="btn btn-primary btn-lg" style="width:100%;">
+      <i class="fas fa-search"></i> Lancer l'analyse
+    </button>
+  </form>
+</div>
+
+{% if result %}
+<!-- Score -->
+<div class="score-banner score-banner-{{ score_to_color(result.score) }}" style="max-width:700px;">
+  <div class="score-banner-grade">{{ score_to_grade(result.score) }}</div>
+  <div>
+    <div class="score-banner-number">{{ result.score }}/100</div>
+    <div class="score-banner-label">{{ url_scanned }}</div>
+  </div>
+  <div class="score-bar-container">
+    <div class="score-bar"
+         style="width:{{ result.score }}%;
+                background:var(--color-{{ score_to_color(result.score) }});">
+    </div>
+  </div>
+</div>
+
+<!-- Résumé rapide -->
+<div style="max-width:700px; display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px;">
+  <span style="background:var(--color-surface-2); padding:6px 14px; border-radius:var(--radius-xs); font-size:0.8rem; display:inline-flex; align-items:center; gap:6px;">
+    <i class="fas fa-check-circle" style="color:var(--color-green);"></i>
+    {{ result.checks|length }} vérifications
+  </span>
+  <span style="background:var(--color-surface-2); padding:6px 14px; border-radius:var(--radius-xs); font-size:0.8rem; display:inline-flex; align-items:center; gap:6px;">
+    <i class="fas fa-ticket" style="color:var(--color-orange);"></i>
+    {{ result.tickets|length }} tickets
+  </span>
+  <span style="background:var(--color-surface-2); padding:6px 14px; border-radius:var(--radius-xs); font-size:0.8rem; display:inline-flex; align-items:center; gap:6px;">
+    <i class="fas fa-file-alt" style="color:var(--color-primary);"></i>
+    NIS2 : {{ result.nis2_score }}%
+  </span>
+  <span style="background:var(--color-surface-2); padding:6px 14px; border-radius:var(--radius-xs); font-size:0.8rem; display:inline-flex; align-items:center; gap:6px;">
+    <i class="fas fa-shield-alt" style="color:var(--color-{{ score_to_color(result.score) }});"></i>
+    Grade {{ score_to_grade(result.score) }}
+  </span>
+</div>
+
+<!-- Résultats -->
+<div class="section" style="max-width:700px;">
+  <div class="section-header">
+    <h2>Détail des vérifications</h2>
+    <span style="font-size:0.8rem;color:var(--color-text-3);">
+      {{ result.checks|length }} contrôles
+    </span>
+  </div>
+  <div class="checks-grid">
+    {% for check in result.checks %}
+    <div class="check-item check-{{ check.status }}">
+      <span class="check-icon">
+        {% if check.status == 'pass' %}<i class="fas fa-check-circle"></i>
+        {% elif check.status == 'fail' %}<i class="fas fa-times-circle"></i>
+        {% else %}<i class="fas fa-exclamation-triangle"></i>{% endif %}
+      </span>
+      <div>
+        <div class="check-name">{{ check.name }}</div>
+        <div class="check-detail">{{ check.detail }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Tickets trouvés -->
+{% if result.tickets %}
+<div class="section" style="max-width:700px;">
+  <div class="section-header">
+    <h2>Vulnérabilités détectées</h2>
+    <span style="font-size:0.8rem;color:var(--color-text-3);">
+      {{ result.tickets|length }} ticket(s)
+    </span>
+  </div>
+  <div class="tickets-list">
+    {% for ticket in result.tickets %}
+    <div class="ticket-card ticket-{{ ticket.severity }}">
+      <div class="ticket-header">
+        <span class="severity-badge severity-{{ ticket.severity }}">
+          {{ ticket.severity }}
+        </span>
+        <span class="ticket-title">{{ ticket.title }}</span>
+      </div>
+      <p class="ticket-description">{{ ticket.description }}</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Actions -->
+<div style="max-width:700px; margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
+  <a href="{{ url_for('main.new_project') }}?url={{ url_scanned }}&name=Scan {{ url_scanned }}"
+     class="btn btn-primary">
+    <i class="fas fa-save"></i> Sauvegarder comme projet
+  </a>
+  <a href="{{ url_for('main.quick_scan') }}" class="btn btn-outline">
+    <i class="fas fa-redo"></i> Nouvelle analyse
+  </a>
+</div>
+{% endif %}
+{% endblock %}

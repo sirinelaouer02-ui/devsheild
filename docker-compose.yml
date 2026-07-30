@@ -1,4 +1,34 @@
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: devsheild_postgres
+    environment:
+      POSTGRES_USER: devshield
+      POSTGRES_PASSWORD: devshield_password
+      POSTGRES_DB: devshield
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devshield"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    container_name: devsheild_redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   web:
     build: .
     container_name: devsheild_web
@@ -6,16 +36,76 @@ services:
       - "5000:5000"
     environment:
       - SECRET_KEY=${SECRET_KEY}
-      - DATABASE_URL=sqlite:///devsheild.db
+      - DATABASE_URL=postgresql://devshield:devshield_password@postgres:5432/devshield
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - FLASK_ENV=production
-    volumes:
-      - db_data:/app/instance
+      - MAIL_SERVER=${MAIL_SERVER}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USE_TLS=${MAIL_USE_TLS}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    volumes:
+      - ./instance:/app/instance
+
+  celery_worker:
+    build: .
+    container_name: devsheild_celery_worker
+    command: celery -A app.tasks worker --loglevel=info
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgresql://devshield:devshield_password@postgres:5432/devshield
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - MAIL_SERVER=${MAIL_SERVER}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USE_TLS=${MAIL_USE_TLS}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./instance:/app/instance
+
+  celery_beat:
+    build: .
+    container_name: devsheild_celery_beat
+    # ✅ Commande modifiée avec PersistentScheduler
+    command: celery -A app.tasks beat --loglevel=info --scheduler celery.beat.PersistentScheduler
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgresql://devshield:devshield_password@postgres:5432/devshield
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - MAIL_SERVER=${MAIL_SERVER}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USE_TLS=${MAIL_USE_TLS}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./instance:/app/instance
+      - ./celerybeat-schedule:/app/celerybeat-schedule  # ✅ Pour persister le schedule
 
   prometheus:
     image: prom/prometheus:latest
@@ -40,6 +130,6 @@ services:
     restart: unless-stopped
 
 volumes:
-  db_data:
+  postgres_data:
   prometheus_data:
   grafana_data:

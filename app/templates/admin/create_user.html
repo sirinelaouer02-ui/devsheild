@@ -1,0 +1,71 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Créer un compte — Admin DevShield{% endblock %}
+{% block topbar_title %}Créer un compte{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Créer un compte</h1>
+        <p class="page-subtitle">
+            Un email sera envoyé automatiquement au développeur
+            avec un lien pour définir son mot de passe.
+        </p>
+    </div>
+    <a href="{{ url_for('admin.users') }}" class="btn btn-outline">Retour</a>
+</div>
+
+<!-- Info sécurité -->
+<div class="alert alert-info" style="max-width:640px; margin-bottom:20px;">
+    Aucun mot de passe ne transite par email — conformité OWASP et NIS2.
+    Le développeur recevra un lien sécurisé valable 24 heures pour
+    définir lui-même son mot de passe.
+</div>
+
+<div class="form-card">
+    <form method="POST" action="{{ url_for('admin.create_user') }}">
+        <!-- ✅ TOKEN CSRF OBLIGATOIRE -->
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-group">
+            <label for="username">Nom d'utilisateur</label>
+            <input type="text" id="username" name="username"
+                   required minlength="3"
+                   placeholder="Ex: jean.dupont">
+            <small class="form-hint">
+                Identifiant de connexion. Minimum 3 caractères, sans espaces.
+            </small>
+        </div>
+        <div class="form-group">
+            <label for="email">Email professionnel</label>
+            <input type="email" id="email" name="email"
+                   required
+                   placeholder="prenom.nom@lenergy-smart.fr">
+            <small class="form-hint">
+                Le lien de configuration sera envoyé à cette adresse.
+            </small>
+        </div>
+        <div class="form-group">
+            <label for="role">Rôle</label>
+            <select id="role" name="role">
+                <option value="developer">
+                    Développeur — accès à ses propres projets
+                </option>
+                <option value="manager">
+                    Manager — vue globale de l'équipe
+                </option>
+                <option value="admin">
+                    Administrateur — accès complet
+                </option>
+            </select>
+        </div>
+        <div class="form-actions">
+            <a href="{{ url_for('admin.users') }}" class="btn btn-outline">
+                Annuler
+            </a>
+            <button type="submit" class="btn btn-primary">
+                Créer et envoyer l'invitation
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

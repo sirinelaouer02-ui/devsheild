@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Planifier un scan — DevShield{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Planifier un scan</h1>
+        <p class="page-subtitle">Configuration des scans automatiques pour {{ project.name }}</p>
+    </div>
+</div>
+
+<div class="form-card" style="max-width:500px; margin:0 auto;">
+    <div class="form-card-header">
+        <div class="form-card-icon">
+            <i class="fas fa-clock"></i>
+        </div>
+        <div>
+            <h2>Scans programmés</h2>
+            <p>Le scan s'exécutera automatiquement à la fréquence choisie</p>
+        </div>
+    </div>
+
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="form-group">
+            <label for="frequency">Fréquence</label>
+            <select id="frequency" name="frequency" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); background:var(--color-surface); color:var(--color-text);">
+                <option value="hourly" {% if scheduled and scheduled.frequency == 'hourly' %}selected{% endif %}>Toutes les heures</option>
+                <option value="daily" {% if scheduled and scheduled.frequency == 'daily' %}selected{% endif %}>Tous les jours</option>
+                <option value="weekly" {% if scheduled and scheduled.frequency == 'weekly' %}selected{% endif %}>Toutes les semaines</option>
+                <option value="monthly" {% if scheduled and scheduled.frequency == 'monthly' %}selected{% endif %}>Tous les mois</option>
+            </select>
+        </div>
+        
+        {% if scheduled %}
+        <div style="background:var(--color-primary-light); padding:12px 16px; border-radius:var(--radius-sm); margin-bottom:16px;">
+            <p style="font-size:0.85rem; color:var(--color-primary); margin:0;">
+                <i class="fas fa-info-circle"></i>
+                Scan actif - Dernière exécution : {{ scheduled.last_run.strftime('%d/%m/%Y %H:%M') if scheduled.last_run else 'Jamais' }}
+            </p>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Mettre à jour
+            </button>
+            <form method="POST" action="{{ url_for('main.unschedule_scan', project_id=project.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-stop"></i> Désactiver
+                </button>
+            </form>
+            <a href="{{ url_for('main.project_detail', project_id=project.id) }}" class="btn btn-outline">Annuler</a>
+        </div>
+        {% else %}
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-calendar-plus"></i> Activer la planification
+        </button>
+        <a href="{{ url_for('main.project_detail', project_id=project.id) }}" class="btn btn-outline" style="margin-top:10px;">Annuler</a>
+        {% endif %}
+    </form>
+</div>
+{% endblock %}

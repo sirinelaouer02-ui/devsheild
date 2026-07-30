@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Configuration 2FA — DevShield{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Authentification à deux facteurs</h1>
+        <p class="page-subtitle">Renforcez la sécurité de votre compte</p>
+    </div>
+</div>
+
+<div class="form-card" style="max-width:500px; margin:0 auto;">
+    <div class="form-card-header">
+        <div class="form-card-icon">
+            <i class="fas fa-key"></i>
+        </div>
+        <div>
+            <h2>Configurer 2FA</h2>
+            <p>Scannez le QR code avec Google Authenticator</p>
+        </div>
+    </div>
+
+    {% if current_user.otp_enabled %}
+    <div style="background:var(--color-green-light); padding:14px 18px; border-radius:var(--radius-sm); margin-bottom:16px; border-left:3px solid var(--color-green);">
+        <p style="color:var(--color-green); margin:0; font-weight:600;">
+            <i class="fas fa-check-circle"></i> 2FA activé
+        </p>
+    </div>
+    <form method="POST" action="{{ url_for('auth.two_factor_disable') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger">
+            <i class="fas fa-times"></i> Désactiver la 2FA
+        </button>
+    </form>
+    {% else %}
+    <div style="text-align:center; margin-bottom:20px;">
+        <img src="{{ qr_code }}" alt="QR Code 2FA" style="max-width:200px; border-radius:var(--radius-sm); border:1px solid var(--color-border); padding:8px;">
+    </div>
+    <div style="background:var(--color-surface-2); padding:12px 16px; border-radius:var(--radius-sm); margin-bottom:16px;">
+        <p style="font-size:0.85rem; color:var(--color-text-2); margin:0;">
+            <i class="fas fa-key" style="color:var(--color-primary);"></i>
+            Clé secrète : <code style="background:var(--color-surface); padding:2px 8px; border-radius:var(--radius-xs); font-size:0.8rem;">{{ current_user.otp_secret }}</code>
+        </p>
+    </div>
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+            <label for="otp_token">Code de vérification</label>
+            <input type="text" id="otp_token" name="otp_token" placeholder="000000" required style="text-align:center; font-size:1.2rem; letter-spacing:4px; font-family:monospace;">
+            <small class="form-hint">Saisissez le code à 6 chiffres généré par votre application</small>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">
+            <i class="fas fa-check"></i> Activer la 2FA
+        </button>
+    </form>
+    {% endif %}
+</div>
+{% endblock %}

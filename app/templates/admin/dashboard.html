@@ -1,0 +1,349 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Tableau de bord — Administration DevShield{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <!-- En-tête -->
+    <div class="admin-header">
+        <div>
+            <h1>Tableau de bord</h1>
+            <p class="admin-subtitle">Vue d'ensemble de la plateforme DevShield</p>
+        </div>
+        <div class="admin-header-actions">
+            <span class="admin-date">{{ now.strftime('%A %d %B %Y') }}</span>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="admin-stats-grid">
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon blue">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+            </div>
+            <div class="admin-stat-content">
+                <span class="admin-stat-value">{{ total_users }}</span>
+                <span class="admin-stat-label">Utilisateurs</span>
+            </div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon green">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+            </div>
+            <div class="admin-stat-content">
+                <span class="admin-stat-value">{{ total_projects }}</span>
+                <span class="admin-stat-label">Projets</span>
+            </div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon orange">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M6 16h.01M10 16h.01M14 16h.01M18 16h.01"/>
+                </svg>
+            </div>
+            <div class="admin-stat-content">
+                <span class="admin-stat-value">{{ total_tickets }}</span>
+                <span class="admin-stat-label">Tickets ouverts</span>
+            </div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon red">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="12"/>
+                    <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+            </div>
+            <div class="admin-stat-content">
+                <span class="admin-stat-value">{{ critical_tickets }}</span>
+                <span class="admin-stat-label">Critiques</span>
+            </div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon purple">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                </svg>
+            </div>
+            <div class="admin-stat-content">
+                <span class="admin-stat-value">{{ total_organizations }}</span>
+                <span class="admin-stat-label">Organisations</span>
+            </div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-icon teal">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+            </div>
+            <div class="admin-stat-content">
+                <span class="admin-stat-value">{{ total_scans }}</span>
+                <span class="admin-stat-label">Scans</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Derniers utilisateurs & Derniers projets -->
+    <div class="admin-two-col">
+        <div class="admin-panel">
+            <div class="admin-panel-header">
+                <h3>Derniers utilisateurs</h3>
+                <a href="{{ url_for('admin.users') }}" class="admin-panel-link">Voir tout →</a>
+            </div>
+            {% if recent_users %}
+                <ul class="admin-list">
+                    {% for user in recent_users %}
+                    <li class="admin-list-item">
+                        <div class="admin-list-avatar">{{ user.username[:1]|upper }}</div>
+                        <div class="admin-list-info">
+                            <span class="admin-list-name">{{ user.username }}</span>
+                            <span class="admin-list-email">{{ user.email }}</span>
+                        </div>
+                        <span class="admin-role-badge {{ user.role }}">{{ user.role_label }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="admin-empty">Aucun utilisateur récent</p>
+            {% endif %}
+        </div>
+
+        <div class="admin-panel">
+            <div class="admin-panel-header">
+                <h3>Derniers projets</h3>
+                <a href="{{ url_for('admin.projects') }}" class="admin-panel-link">Voir tout →</a>
+            </div>
+            {% if projects %}
+                <ul class="admin-list">
+                    {% for project in projects[:5] %}
+                    <li class="admin-list-item">
+                        <div class="admin-list-icon">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                            </svg>
+                        </div>
+                        <div class="admin-list-info">
+                            <span class="admin-list-name">{{ project.name }}</span>
+                            <span class="admin-list-email">{{ project.url }}</span>
+                        </div>
+                        <span class="admin-score-badge score-{{ project._security_score|score_color }}">
+                            {{ project._security_score or 'N/A' }}
+                        </span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="admin-empty">Aucun projet récent</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Historique des actions -->
+    <div class="admin-panel" style="margin-top: 24px;">
+        <div class="admin-panel-header">
+            <h3>Historique des actions</h3>
+            <a href="{{ url_for('admin.logs') }}" class="admin-panel-link">Voir tout →</a>
+        </div>
+        {% if recent_logs %}
+            <ul class="admin-timeline">
+                {% for log in recent_logs[:10] %}
+                <li class="admin-timeline-item">
+                    <span class="admin-timeline-time">{{ log.created_at.strftime('%H:%M') }}</span>
+                    <span class="admin-timeline-badge {{ log.action }}">
+                        {% if log.action == 'scan' %}
+                            Scan exécuté
+                        {% elif log.action == 'schedule_scan' %}
+                            Scan planifié
+                        {% elif log.action == 'unschedule_scan' %}
+                            Scan désactivé
+                        {% elif log.action == 'scheduled_scan_executed' %}
+                            Scan auto exécuté
+                        {% elif log.action == 'login' %}
+                            Connexion
+                        {% elif log.action == 'logout' %}
+                            Déconnexion
+                        {% elif log.action == 'add_member' %}
+                            Membre ajouté
+                        {% elif log.action == 'remove_member' %}
+                            Membre retiré
+                        {% elif log.action == 'change_role' %}
+                            Rôle modifié
+                        {% elif log.action == 'resolve_ticket' %}
+                            Ticket résolu
+                        {% elif log.action == 'assign_ticket' %}
+                            Ticket assigné
+                        {% elif log.action == 'delete_project' %}
+                            Projet supprimé
+                        {% elif log.action == 'create_user' %}
+                            Utilisateur créé
+                        {% elif log.action == 'edit_user' %}
+                            Utilisateur modifié
+                        {% elif log.action == 'delete_user' %}
+                            Utilisateur supprimé
+                        {% elif log.action == 'create_organization' %}
+                            Organisation créée
+                        {% elif log.action == 'edit_organization' %}
+                            Organisation modifiée
+                        {% elif log.action == 'delete_organization' %}
+                            Organisation supprimée
+                        {% else %}
+                            {{ log.action|replace('_', ' ')|capitalize }}
+                        {% endif %}
+                    </span>
+                    <span class="admin-timeline-detail">{{ log.details or 'Action effectuée' }}</span>
+                    <span class="admin-timeline-user">
+                        {% if log.user %}
+                            par {{ log.user.username }}
+                        {% else %}
+                            Système
+                        {% endif %}
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="admin-empty">Aucune activité récente</p>
+        {% endif %}
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="admin-panel" style="margin-top: 24px;">
+        <div class="admin-panel-header">
+            <h3>Actions rapides</h3>
+        </div>
+        <div class="admin-quick-actions">
+            <a href="{{ url_for('admin.create_user') }}" class="admin-quick-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="8.5" cy="7" r="4"/>
+                    <line x1="20" y1="8" x2="20" y2="14"/>
+                    <line x1="23" y1="11" x2="17" y2="11"/>
+                </svg>
+                <span>Créer un utilisateur</span>
+            </a>
+            <a href="{{ url_for('admin.projects') }}" class="admin-quick-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span>Gérer les projets</span>
+            </a>
+            <a href="{{ url_for('admin.logs') }}" class="admin-quick-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                <span>Voir les logs</span>
+            </a>
+            <a href="{{ url_for('main.new_project') }}" class="admin-quick-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    <line x1="12" y1="11" x2="12" y2="17"/>
+                    <line x1="9" y1="14" x2="15" y2="14"/>
+                </svg>
+                <span>Nouveau projet</span>
+            </a>
+            <a href="{{ url_for('admin.organizations') }}" class="admin-quick-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                </svg>
+                <span>Organisations</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .admin-dashboard { max-width: 1200px; margin: 0 auto; }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 12px; }
+    .admin-header h1 { font-size: 1.5rem; font-weight: 700; color: var(--color-text); }
+    .admin-subtitle { color: var(--color-text-3); font-size: 0.9rem; margin-top: 4px; }
+    .admin-date { color: var(--color-text-3); font-size: 0.85rem; background: var(--color-surface-2); padding: 6px 14px; border-radius: var(--radius-sm); }
+    
+    .admin-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 28px; }
+    .admin-stat-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 16px 18px; display: flex; align-items: center; gap: 12px; }
+    .admin-stat-icon { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .admin-stat-icon.blue { color: var(--color-primary); }
+    .admin-stat-icon.green { color: var(--color-green); }
+    .admin-stat-icon.orange { color: var(--color-orange); }
+    .admin-stat-icon.red { color: var(--color-red); }
+    .admin-stat-icon.purple { color: #7c3aed; }
+    .admin-stat-icon.teal { color: #00897b; }
+    .admin-stat-content { display: flex; flex-direction: column; }
+    .admin-stat-value { font-size: 1.5rem; font-weight: 700; color: var(--color-text); line-height: 1.2; }
+    .admin-stat-label { font-size: 0.75rem; color: var(--color-text-3); }
+    
+    .admin-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 768px) { .admin-two-col { grid-template-columns: 1fr; } }
+    
+    .admin-panel { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 18px 20px; }
+    .admin-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .admin-panel-header h3 { font-size: 0.95rem; font-weight: 600; color: var(--color-text); }
+    .admin-panel-link { font-size: 0.8rem; color: var(--color-primary); }
+    .admin-panel-link:hover { text-decoration: underline; }
+    
+    .admin-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+    .admin-list-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--color-bg); border-radius: var(--radius-sm); border: 1px solid var(--color-border); }
+    .admin-list-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--color-primary); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; flex-shrink: 0; }
+    .admin-list-icon { width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--color-surface-2); display: flex; align-items: center; justify-content: center; color: var(--color-text-3); flex-shrink: 0; }
+    .admin-list-info { flex: 1; min-width: 0; }
+    .admin-list-name { font-size: 0.85rem; font-weight: 600; color: var(--color-text); display: block; }
+    .admin-list-email { font-size: 0.75rem; color: var(--color-text-3); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .admin-role-badge { font-size: 0.65rem; font-weight: 700; padding: 3px 8px; border-radius: var(--radius-xs); text-transform: uppercase; flex-shrink: 0; }
+    .admin-role-badge.admin { background: var(--color-red-light); color: var(--color-red); }
+    .admin-role-badge.manager { background: var(--color-orange-light); color: var(--color-orange); }
+    .admin-role-badge.developer { background: var(--color-primary-light); color: var(--color-primary); }
+    
+    .admin-score-badge { font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: var(--radius-xs); flex-shrink: 0; }
+    .admin-score-badge.score-green { background: var(--color-green-light); color: var(--color-green); }
+    .admin-score-badge.score-orange { background: var(--color-orange-light); color: var(--color-orange); }
+    .admin-score-badge.score-red { background: var(--color-red-light); color: var(--color-red); }
+    .admin-score-badge.score-none { background: var(--color-none-light); color: var(--color-none); }
+    
+    .admin-empty { color: var(--color-text-3); font-size: 0.85rem; padding: 12px 0; text-align: center; }
+    
+    .admin-quick-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .admin-quick-btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-sm); color: var(--color-text-2); font-size: 0.85rem; font-weight: 500; transition: all 0.15s; }
+    .admin-quick-btn:hover { border-color: var(--color-primary); color: var(--color-primary); text-decoration: none; background: var(--color-primary-light); }
+    .admin-quick-btn svg { flex-shrink: 0; }
+    
+    /* Timeline */
+    .admin-timeline { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+    .admin-timeline-item { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: var(--color-bg); border-radius: var(--radius-sm); border: 1px solid var(--color-border); font-size: 0.85rem; flex-wrap: wrap; }
+    .admin-timeline-time { color: var(--color-text-3); font-size: 0.75rem; min-width: 45px; flex-shrink: 0; }
+    .admin-timeline-badge { font-size: 0.7rem; font-weight: 600; padding: 2px 10px; border-radius: var(--radius-xs); flex-shrink: 0; }
+    .admin-timeline-badge.scan { background: var(--color-primary-light); color: var(--color-primary); }
+    .admin-timeline-badge.schedule_scan { background: var(--color-primary-light); color: var(--color-primary); }
+    .admin-timeline-badge.unschedule_scan { background: var(--color-orange-light); color: var(--color-orange); }
+    .admin-timeline-badge.scheduled_scan_executed { background: var(--color-green-light); color: var(--color-green); }
+    .admin-timeline-badge.login { background: var(--color-green-light); color: var(--color-green); }
+    .admin-timeline-badge.logout { background: var(--color-orange-light); color: var(--color-orange); }
+    .admin-timeline-badge.add_member { background: var(--color-green-light); color: var(--color-green); }
+    .admin-timeline-badge.remove_member { background: var(--color-red-light); color: var(--color-red); }
+    .admin-timeline-badge.change_role { background: var(--color-orange-light); color: var(--color-orange); }
+    .admin-timeline-badge.resolve_ticket { background: var(--color-green-light); color: var(--color-green); }
+    .admin-timeline-badge.assign_ticket { background: var(--color-primary-light); color: var(--color-primary); }
+    .admin-timeline-badge.delete_project { background: var(--color-red-light); color: var(--color-red); }
+    .admin-timeline-badge.create_user { background: var(--color-green-light); color: var(--color-green); }
+    .admin-timeline-badge.edit_user { background: var(--color-orange-light); color: var(--color-orange); }
+    .admin-timeline-badge.delete_user { background: var(--color-red-light); color: var(--color-red); }
+    .admin-timeline-badge.create_organization { background: var(--color-green-light); color: var(--color-green); }
+    .admin-timeline-badge.edit_organization { background: var(--color-orange-light); color: var(--color-orange); }
+    .admin-timeline-badge.delete_organization { background: var(--color-red-light); color: var(--color-red); }
+    .admin-timeline-detail { flex: 1; color: var(--color-text); min-width: 120px; }
+    .admin-timeline-user { color: var(--color-text-3); font-size: 0.75rem; flex-shrink: 0; }
+</style>
+{% endblock %}

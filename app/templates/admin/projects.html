@@ -1,0 +1,105 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Projets — Administration DevShield{% endblock %}
+
+{% block content %}
+<div class="admin-projects">
+    <div class="admin-header">
+        <div>
+            <h1>Projets</h1>
+            <p class="admin-subtitle">Gestion des projets de la plateforme</p>
+        </div>
+        <div class="admin-header-actions">
+            <a href="{{ url_for('main.new_project') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nouveau projet
+            </a>
+        </div>
+    </div>
+
+    <div class="admin-table-wrapper">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Projet</th>
+                    <th>URL</th>
+                    <th>Propriétaire</th>
+                    <th>Score</th>
+                    <th>Scans</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for project in projects %}
+                <tr>
+                    <td>
+                        <div class="admin-project-cell">
+                            <span class="admin-project-name">{{ project.name }}</span>
+                        </div>
+                    </td>
+                    <td><a href="{{ project.url }}" target="_blank" class="admin-project-url">{{ project.url }}</a></td>
+                    <td>{{ project.owner.username if project.owner else '-' }}</td>
+                    <td>
+                        <span class="admin-score-badge score-{{ project._security_score|score_color }}">
+                            {{ project._security_score or 'N/A' }}
+                        </span>
+                    </td>
+                    <td>{{ project.scans|length }}</td>
+                    <td>
+                        <div class="admin-actions">
+                            <a href="{{ url_for('main.project_detail', project_id=project.id) }}" class="admin-action-btn view" title="Voir">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <!-- ✅ Utilisation de main.delete_project -->
+                            <form method="POST" action="{{ url_for('main.delete_project', project_id=project.id) }}" style="display:inline;" onsubmit="return confirm('Supprimer ce projet ?')">
+                                <button type="submit" class="admin-action-btn delete" title="Supprimer">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="admin-empty-cell">Aucun projet trouvé</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .admin-projects { max-width: 1200px; margin: 0 auto; }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+    .admin-header h1 { font-size: 1.5rem; font-weight: 700; color: var(--color-text); }
+    .admin-subtitle { color: var(--color-text-3); font-size: 0.9rem; margin-top: 4px; }
+    
+    .admin-project-cell { display: flex; align-items: center; gap: 10px; }
+    .admin-project-name { font-weight: 500; }
+    .admin-project-url { color: var(--color-primary); font-size: 0.8rem; word-break: break-all; }
+    .admin-project-url:hover { text-decoration: underline; }
+    
+    .admin-table-wrapper { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); overflow: hidden; }
+    .admin-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .admin-table th { background: var(--color-surface-2); color: var(--color-text-2); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--color-border); }
+    .admin-table td { padding: 12px 16px; border-bottom: 1px solid var(--color-border); color: var(--color-text); }
+    .admin-table tr:hover td { background: var(--color-surface-2); }
+    
+    .admin-score-badge { font-size: 0.75rem; font-weight: 700; padding: 3px 10px; border-radius: var(--radius-xs); display: inline-block; }
+    .admin-score-badge.score-green { background: var(--color-green-light); color: var(--color-green); }
+    .admin-score-badge.score-orange { background: var(--color-orange-light); color: var(--color-orange); }
+    .admin-score-badge.score-red { background: var(--color-red-light); color: var(--color-red); }
+    .admin-score-badge.score-none { background: var(--color-none-light); color: var(--color-none); }
+    
+    .admin-actions { display: flex; gap: 6px; }
+    .admin-action-btn { width: 30px; height: 30px; border: none; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; transition: all 0.15s; }
+    .admin-action-btn.view { background: var(--color-primary-light); color: var(--color-primary); }
+    .admin-action-btn.view:hover { background: var(--color-primary); color: #fff; }
+    .admin-action-btn.delete { background: var(--color-red-light); color: var(--color-red); }
+    .admin-action-btn.delete:hover { background: var(--color-red); color: #fff; }
+    
+    .admin-empty-cell { text-align: center; padding: 40px; color: var(--color-text-3); }
+</style>
+{% endblock %}

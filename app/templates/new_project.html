@@ -1,57 +1,102 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+
 {% block title %}Nouvelle application — DevShield{% endblock %}
 
 {% block content %}
 <div class="page-header">
     <div>
-        <h1>Nouvelle application</h1>
-        <p class="page-subtitle">Ajoute une application Lenergy Smart à surveiller</p>
+        <h1>Ajouter une application</h1>
+        <p class="page-subtitle">Saisissez l'URL de l'application à surveiller</p>
     </div>
 </div>
 
-<!-- Raccourcis Lenergy -->
-<div class="presets-section">
-    <p class="presets-label">⚡ Applications Lenergy Smart — cliquer pour remplir automatiquement :</p>
+<div class="form-card" style="max-width:600px; margin:0 auto;">
+    <div class="form-card-header">
+        <div class="form-card-icon">
+            <i class="fas fa-plus-circle"></i>
+        </div>
+        <div>
+            <h2>Nouveau projet</h2>
+            <p>L'application sera scannée automatiquement</p>
+        </div>
+    </div>
+
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="form-group">
+            <label for="name">Nom de l'application</label>
+            <input type="text" id="name" name="name" placeholder="Mon application" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="protocol">Protocole</label>
+            <select id="protocol" name="protocol" style="width:100%; padding:9px 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); background:var(--color-surface); color:var(--color-text);">
+                <option value="https://">https://</option>
+                <option value="http://">http://</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="domain">Domaine</label>
+            <input type="text" id="domain" name="domain" placeholder="exemple.com" required>
+            <small class="form-hint">Saisissez le domaine sans protocole</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description (optionnelle)</label>
+            <textarea id="description" name="description" rows="2" placeholder="Description de l'application..."></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="members">Inviter des membres (optionnel)</label>
+            <input type="text" id="members" name="members" placeholder="email1@exemple.com, email2@exemple.com">
+            <small class="form-hint">Séparez les emails par des virgules</small>
+        </div>
+        
+        <div class="form-group" style="display:flex; align-items:center; gap:10px;">
+            <input type="checkbox" id="authorized_active_scan" name="authorized_active_scan" style="width:auto;">
+            <label for="authorized_active_scan" style="margin:0; font-weight:400; font-size:0.85rem; color:var(--color-text-2);">
+                <i class="fas fa-shield-alt" style="color:var(--color-orange);"></i>
+                Autoriser les tests actifs (SQLi, XSS, CSRF)
+            </label>
+        </div>
+        <small class="form-hint" style="display:block; margin-top:-8px; margin-bottom:16px;">
+            Ces tests envoient des payloads d'injection. À n'activer que sur vos propres applications.
+        </small>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Créer le projet
+            </button>
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline">Annuler</a>
+        </div>
+    </form>
+</div>
+
+<!-- Presets -->
+<div class="presets-section" style="max-width:600px; margin:20px auto 0;">
+    <div class="presets-label">
+        <i class="fas fa-bolt" style="color:var(--color-primary);"></i>
+        Applications Lenergy Smart
+    </div>
     <div class="presets-grid">
         {% for preset in presets %}
-        <button type="button" class="preset-btn"
-                onclick="fillPreset('{{ preset.name }}', '{{ preset.url }}', '{{ preset.description }}')">
+        <button type="button" class="preset-btn" data-name="{{ preset.name }}" data-url="{{ preset.url }}" data-description="{{ preset.description }}">
+            <i class="fas fa-arrow-right" style="font-size:0.6rem;"></i>
             {{ preset.name }}
         </button>
         {% endfor %}
     </div>
 </div>
 
-<div class="form-card">
-    <form method="POST" action="{{ url_for('main.new_project') }}">
-        <div class="form-group">
-            <label for="name">Nom de l'application *</label>
-            <input type="text" id="name" name="name" required
-                   placeholder="Ex: API Check-Elec Production">
-        </div>
-        <div class="form-group">
-            <label for="url">URL à surveiller *</label>
-            <input type="url" id="url" name="url" required
-                   placeholder="https://api.lenergy-smart.fr">
-            <small class="form-hint">URL complète de l'application ou de l'API à analyser.</small>
-        </div>
-        <div class="form-group">
-            <label for="description">Description</label>
-            <textarea id="description" name="description" rows="3"
-                      placeholder="Décris cette application..."></textarea>
-        </div>
-        <div class="form-actions">
-            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline">Annuler</a>
-            <button type="submit" class="btn btn-primary">Créer et surveiller</button>
-        </div>
-    </form>
-</div>
-
 <script>
-function fillPreset(name, url, description) {
-    document.getElementById('name').value = name;
-    document.getElementById('url').value = url;
-    document.getElementById('description').value = description;
-}
+document.querySelectorAll('.preset-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        document.getElementById('name').value = this.dataset.name;
+        document.getElementById('domain').value = this.dataset.url.replace(/^https?:\/\//, '');
+        document.getElementById('description').value = this.dataset.description;
+    });
+});
 </script>
 {% endblock %}

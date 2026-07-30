@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DevShield — Authentification{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Reset & base */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --auth-bg: #f1f4f9;
+            --auth-card-bg: #ffffff;
+            --auth-text: #1a202c;
+            --auth-text-secondary: #4a5568;
+            --auth-text-muted: #a0aec0;
+            --auth-border: #e2e8f0;
+            --auth-input-bg: #f7fafc;
+            --auth-primary: #2563eb;
+            --auth-primary-hover: #1d4ed8;
+            --auth-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+            --auth-radius: 16px;
+        }
+
+        [data-theme="dark"] {
+            --auth-bg: #111827;
+            --auth-card-bg: #1f2937;
+            --auth-text: #f1f5f9;
+            --auth-text-secondary: #94a3b8;
+            --auth-text-muted: #64748b;
+            --auth-border: #374151;
+            --auth-input-bg: #111827;
+            --auth-primary: #3b82f6;
+            --auth-primary-hover: #2563eb;
+            --auth-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: var(--auth-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            transition: background 0.2s;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 400px;
+            background: var(--auth-card-bg);
+            border-radius: var(--auth-radius);
+            padding: 40px 32px;
+            box-shadow: var(--auth-shadow);
+            border: 1px solid var(--auth-border);
+            transition: background 0.2s, border-color 0.2s;
+            position: relative;
+        }
+
+        /* Theme toggle en haut à droite */
+        .auth-theme-toggle {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--auth-input-bg);
+            border: 1px solid var(--auth-border);
+            border-radius: 999px;
+            padding: 3px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .auth-theme-toggle button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            color: var(--auth-text-muted);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .auth-theme-toggle button.is-active {
+            background: var(--auth-card-bg);
+            color: var(--auth-primary);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        .auth-theme-toggle button:hover {
+            color: var(--auth-text);
+        }
+
+        .auth-logo {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .auth-logo h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--auth-text);
+            letter-spacing: -0.02em;
+        }
+        .auth-logo p {
+            font-size: 14px;
+            color: var(--auth-text-muted);
+            margin-top: 4px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--auth-text-secondary);
+            margin-bottom: 4px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--auth-border);
+            border-radius: 10px;
+            font-size: 15px;
+            background: var(--auth-input-bg);
+            color: var(--auth-text);
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--auth-primary);
+            background: var(--auth-card-bg);
+        }
+        .form-group input::placeholder {
+            color: var(--auth-text-muted);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: var(--auth-primary);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .btn-primary:hover {
+            background: var(--auth-primary-hover);
+        }
+
+        .auth-options {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .auth-options input {
+            width: auto;
+            margin: 0;
+        }
+        .auth-options label {
+            font-size: 14px;
+            color: var(--auth-text-secondary);
+        }
+
+        .auth-links {
+            text-align: center;
+            font-size: 14px;
+            color: var(--auth-text-muted);
+            margin-top: 20px;
+        }
+        .auth-links a {
+            color: var(--auth-primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .auth-links a:hover {
+            text-decoration: underline;
+        }
+
+        .flash-messages {
+            margin-bottom: 16px;
+        }
+        .flash {
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 14px;
+            border: 1px solid transparent;
+        }
+        .flash-danger {
+            background: #fef2f2;
+            color: #dc2626;
+            border-color: #fca5a5;
+        }
+        .flash-success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border-color: #86efac;
+        }
+
+        @media (max-width: 480px) {
+            .auth-container { padding: 28px 20px; }
+            .auth-logo h1 { font-size: 24px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="auth-container">
+    <!-- Theme toggle -->
+    <div class="auth-theme-toggle" id="authThemeToggle">
+        <button type="button" data-theme-option="light" title="Mode clair">
+            <i class="fas fa-sun"></i>
+        </button>
+        <button type="button" data-theme-option="dark" title="Mode sombre">
+            <i class="fas fa-moon"></i>
+        </button>
+    </div>
+
+    <div class="auth-logo">
+        <h1>DevShield</h1>
+        <p>Connectez-vous à votre compte</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</div>
+
+<script>
+    // Theme toggle pour la page d'authentification
+    (function() {
+        var saved = localStorage.getItem('devshield-theme');
+        var theme = saved || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+
+        function paintToggle() {
+            var current = document.documentElement.getAttribute('data-theme');
+            var toggle = document.getElementById('authThemeToggle');
+            if (!toggle) return;
+            var buttons = toggle.querySelectorAll('[data-theme-option]');
+            buttons.forEach(function(btn) {
+                btn.classList.toggle('is-active', btn.getAttribute('data-theme-option') === current);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var toggle = document.getElementById('authThemeToggle');
+            if (!toggle) return;
+            paintToggle();
+
+            toggle.querySelectorAll('[data-theme-option]').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var choice = btn.getAttribute('data-theme-option');
+                    document.documentElement.setAttribute('data-theme', choice);
+                    localStorage.setItem('devshield-theme', choice);
+                    paintToggle();
+                });
+            });
+        });
+    })();
+</script>
+
+</body>
+</html>

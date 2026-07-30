@@ -8,12 +8,11 @@ on:
 
 jobs:
   # =====================
-  # JOB 1 : Tests + Lint
+  # JOB 1 : Tests + Lint + Securite
   # =====================
   test:
-    name: Tests & Lint
+    name: Tests, Lint & Securite
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout du code
         uses: actions/checkout@v4
@@ -27,7 +26,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install flake8
+          pip install flake8 bandit pip-audit
 
       - name: Lint avec flake8
         run: |
@@ -35,6 +34,16 @@ jobs:
           flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
           # Warnings pour le reste (max 100 chars par ligne)
           flake8 app/ --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+
+      - name: Bandit (SAST — recherche de patterns de code dangereux)
+        run: bandit -r app/ -ll
+        # -ll = ne remonte que les severites medium et high
+        # Ajoute "|| true" en fin de ligne si tu ne veux pas bloquer le pipeline pour l'instant
+
+      - name: pip-audit (CVE dans les dependances)
+        run: pip-audit -r requirements.txt
+        # Bloque le pipeline si une dependance a une CVE connue.
+        # Pour ne pas bloquer en phase dev : ajoute "|| true" en fin de ligne
 
       - name: Tests unitaires
         run: |
@@ -46,8 +55,7 @@ jobs:
   build:
     name: Build & Scan Docker
     runs-on: ubuntu-latest
-    needs: test  # Lance seulement si les tests passent
-
+    needs: test  # Lance seulement si les tests + securite passent
     steps:
       - name: Checkout du code
         uses: actions/checkout@v4
@@ -73,7 +81,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
     steps:
       - name: Checkout du code
         uses: actions/checkout@v4
@@ -92,7 +99,7 @@ jobs:
             docker compose ps
             echo "Déploiement terminé !"
 
-- name: Déclenche le scan de sécurité DevShield
+      - name: Déclenche le scan de sécurité DevShield
         run: |
           curl -X POST https://devshield.lenergy-smart.fr/api/webhook/scan/1 \
             -H "X-Webhook-Secret: ${{ secrets.DEVSHIELD_WEBHOOK_SECRET }}" \

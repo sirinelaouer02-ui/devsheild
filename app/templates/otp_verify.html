@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Vérification 2FA — DevShield{% endblock %}
+
+{% block content2 %}
+<div class="auth-page">
+  <div class="auth-left">
+    <div class="auth-left-content">
+      <div class="auth-brand">
+        <div class="auth-brand-icon"><i class="fas fa-shield-alt"></i></div>
+        <div class="auth-brand-name">DevShield</div>
+      </div>
+      <h1 class="auth-headline">
+        Vérification<br>
+        <span>à deux facteurs</span>
+      </h1>
+      <p class="auth-desc">
+        Entrez le code à 6 chiffres généré par votre application d'authentification.
+      </p>
+    </div>
+  </div>
+
+  <div class="auth-right">
+    <div class="auth-form-box">
+      <h2 class="auth-form-title">Code de sécurité</h2>
+      <p class="auth-form-sub">Pour {{ username }}</p>
+      <form method="POST" action="{{ url_for('auth.verify_otp') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+          <label for="otp_token">Code à 6 chiffres</label>
+          <input type="text" id="otp_token" name="otp_token"
+                 required autocomplete="one-time-code"
+                 placeholder="123456" maxlength="6" inputmode="numeric">
+        </div>
+        <button type="submit" class="btn btn-primary btn-full btn-lg">
+          <i class="fas fa-check-circle"></i> Vérifier
+        </button>
+      </form>
+      <p style="margin-top: 16px; font-size: 0.85rem; color: var(--color-text-3);">
+        <i class="fas fa-info-circle"></i> Utilisez l'application Google Authenticator, Authy ou une autre application TOTP.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

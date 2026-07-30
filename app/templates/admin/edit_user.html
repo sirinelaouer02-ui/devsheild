@@ -1,0 +1,53 @@
+{% extends 'admin/base_admin.html' %}
+{% block title %}Modifier {{ user.username }} — Admin DevShield{% endblock %}
+{% block topbar_title %}Modifier un compte{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Modifier {{ user.username }}</h1>
+        <p class="page-subtitle">{{ user.email }}</p>
+    </div>
+    <a href="{{ url_for('admin.users') }}" class="btn btn-outline">Retour</a>
+</div>
+
+<div class="form-card">
+    <form method="POST" action="{{ url_for('admin.edit_user', user_id=user.id) }}">
+        <div class="form-group">
+            <label>Nom d'utilisateur</label>
+            <input type="text" value="{{ user.username }}" disabled
+                   style="opacity:0.5; cursor:not-allowed;">
+            <small class="form-hint">Le nom d'utilisateur ne peut pas être modifié.</small>
+        </div>
+        <div class="form-group">
+            <label for="role">Rôle</label>
+            <select id="role" name="role">
+                <option value="developer" {% if user.role == 'developer' %}selected{% endif %}>
+                    Développeur
+                </option>
+                <option value="manager" {% if user.role == 'manager' %}selected{% endif %}>
+                    Manager
+                </option>
+                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>
+                    Administrateur
+                </option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                <input type="checkbox" name="is_active"
+                       {% if user.is_active %}checked{% endif %}
+                       style="width:16px; height:16px;">
+                <span>Compte actif</span>
+            </label>
+            <small class="form-hint">
+                Décocher pour désactiver le compte sans le supprimer.
+            </small>
+        </div>
+        <div class="form-actions">
+            <a href="{{ url_for('admin.users') }}" class="btn btn-outline">Annuler</a>
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

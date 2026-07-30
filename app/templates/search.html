@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Recherche — DevShield{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Recherche</h1>
+        <p class="page-subtitle">Recherchez des projets ou des tickets</p>
+    </div>
+</div>
+
+<div style="max-width:700px; margin:0 auto;">
+    <form method="GET" style="display:flex; gap:10px;">
+        <input type="text" name="q" placeholder="Rechercher un projet ou un ticket..." value="{{ q }}" style="flex:1; padding:10px 14px; border:1px solid var(--color-border); border-radius:var(--radius-sm); background:var(--color-surface); color:var(--color-text); font-size:1rem;">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Rechercher</button>
+    </form>
+</div>
+
+{% if q %}
+<div style="margin-top:24px;">
+    <!-- Projets -->
+    <div class="section">
+        <h2>Projets <span style="font-size:0.8rem; color:var(--color-text-3); font-weight:400;">({{ results.projects|length }})</span></h2>
+        {% if results.projects %}
+        <div class="projects-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+            {% for project in results.projects %}
+            <div class="project-card">
+                <div class="project-card-top">
+                    <div>
+                        <h2 class="project-name">{{ project.name }}</h2>
+                        <p class="project-url">{{ project.url }}</p>
+                    </div>
+                    <div class="score-badge score-{{ score_to_color(project.security_score) }}">
+                        <span class="score-grade">{{ score_to_grade(project.security_score) }}</span>
+                        <span class="score-number">{{ project.security_score or 'N/A' }}</span>
+                    </div>
+                </div>
+                <div class="project-card-footer">
+                    <a href="{{ url_for('main.project_detail', project_id=project.id) }}" class="btn btn-outline btn-sm">Voir</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:var(--color-text-3);">Aucun projet trouvé</p>
+        {% endif %}
+    </div>
+    
+    <!-- Tickets -->
+    <div class="section" style="margin-top:28px;">
+        <h2>Tickets <span style="font-size:0.8rem; color:var(--color-text-3); font-weight:400;">({{ results.tickets|length }})</span></h2>
+        {% if results.tickets %}
+        <div class="tickets-list">
+            {% for ticket in results.tickets %}
+            {% set project = projects_map.get(ticket.project_id) %}
+            <div class="ticket-card ticket-{{ ticket.severity }}" style="padding:12px 16px;">
+                <div class="ticket-header" style="margin-bottom:4px;">
+                    <span class="severity-badge severity-{{ ticket.severity }}">{{ ticket.severity }}</span>
+                    <span class="ticket-title">{{ ticket.title }}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                    <span style="font-size:0.8rem; color:var(--color-text-3);">
+                        <i class="fas fa-folder"></i> {{ project.name if project else 'Projet inconnu' }}
+                    </span>
+                    <a href="{{ url_for('main.project_detail', project_id=ticket.project_id) }}" class="btn btn-outline btn-sm">Voir le projet</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:var(--color-text-3);">Aucun ticket trouvé</p>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

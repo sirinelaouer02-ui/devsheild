@@ -2,48 +2,182 @@
 {% block title %}{{ project.name }} — DevShield{% endblock %}
 
 {% block content %}
+
+{# Macro pour obtenir la référence OWASP ASVS #}
+{% macro get_owasp_ref(check_name) %}
+  {% set mapping = {
+    'CSP': 'ASVS 14.1 - Content Security Policy',
+    'HSTS': 'ASVS 14.4 - HTTP Strict Transport Security',
+    'X-Frame-Options': 'ASVS 14.2 - Frame Protection',
+    'X-Content-Type-Options': 'ASVS 14.3 - Content-Type Protection',
+    'CORS': 'ASVS 14.5 - Cross-Origin Resource Sharing',
+    'TLS': 'ASVS 9.1 - TLS Configuration',
+    'SPF': 'ASVS 13.2 - Email Security',
+    'DKIM': 'ASVS 13.2 - Email Security',
+    'DMARC': 'ASVS 13.2 - Email Security',
+    'XSS': 'ASVS 4.1 - Cross-Site Scripting',
+    'SQLi': 'ASVS 5.1 - SQL Injection',
+    'CSRF': 'ASVS 4.2 - Cross-Site Request Forgery',
+    'Permissions-Policy': 'ASVS 14.6 - Feature Policy',
+    'Referrer-Policy': 'ASVS 14.7 - Referrer Policy',
+    'Cross-Origin-Opener-Policy': 'ASVS 14.8 - Cross-Origin Opener Policy',
+    'Cross-Origin-Resource-Policy': 'ASVS 14.9 - Cross-Origin Resource Policy',
+    'Directory listing': 'ASVS 14.10 - Directory Listing',
+    'TRACE': 'ASVS 14.11 - HTTP Method Restriction',
+    'PUT/DELETE': 'ASVS 14.11 - HTTP Method Restriction'
+  } %}
+  {% for key, value in mapping.items() %}
+    {% if key in check_name %}
+      {{ value }}
+    {% endif %}
+  {% endfor %}
+{% endmacro %}
+
 <div class="page-header">
-    <div>
-        <h1>{{ project.name }}</h1>
-        <p class="project-url">{{ project.url }}</p>
+  <div>
+    <h1>{{ project.name }}</h1>
+    <p class="project-url">{{ project.url }}</p>
+    <!-- Badge de statut des tests actifs -->
+    <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
+      {% if project.authorized_active_scan %}
+      <span style="background: var(--color-primary-light); color: var(--color-primary); padding: 4px 14px; border-radius: 20px; font-size: 0.75rem; border: 1px solid var(--color-primary); display: inline-flex; align-items: center; gap: 6px;">
+        <i class="fas fa-bolt"></i> Tests actifs OWASP autorises (SQLi, XSS, CSRF)
+      </span>
+      {% else %}
+      <span style="background: var(--color-surface-2); color: var(--color-text-3); padding: 4px 14px; border-radius: 20px; font-size: 0.75rem; border: 1px solid var(--color-border); display: inline-flex; align-items: center; gap: 6px;">
+        <i class="fas fa-shield-alt"></i> Tests passifs uniquement (headers, TLS, fichiers exposes)
+      </span>
+      {% endif %}
     </div>
-    <div class="header-actions">
-        <a href="{{ url_for('main.nis2_report', project_id=project.id) }}"
-           class="btn btn-outline">📋 Rapport NIS2</a>
-        <form method="POST" action="{{ url_for('main.run_scan', project_id=project.id) }}">
-            <button type="submit" class="btn btn-primary">🔍 Lancer un scan</button>
-        </form>
-        <form method="POST" action="{{ url_for('main.delete_project', project_id=project.id) }}"
-              onsubmit="return confirm('Supprimer ce projet ?')">
-            <button type="submit" class="btn btn-danger">Supprimer</button>
-        </form>
-    </div>
+  </div>
+  <div class="header-actions">
+    <a href="{{ url_for('main.nis2_report', project_id=project.id) }}"
+       class="btn btn-outline"><i class="fas fa-clipboard-list"></i> Rapport NIS2</a>
+    <a href="{{ url_for('main.schedule_scan', project_id=project.id) }}"
+       class="btn btn-outline"><i class="fas fa-clock"></i> Planifier</a>
+    <!-- ✅ Formulaire Lancer un scan avec CSRF -->
+    <form method="POST" action="{{ url_for('main.run_scan', project_id=project.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-primary"><i class="fas fa-sync-alt"></i> Lancer un scan</button>
+    </form>
+    {% if project.user_id == current_user.id %}
+    <!-- ✅ Formulaire Supprimer avec CSRF -->
+    <form method="POST" action="{{ url_for('main.delete_project', project_id=project.id) }}"
+          onsubmit="return confirm('Supprimer ce projet ?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-danger"><i class="fas fa-trash-alt"></i> Supprimer</button>
+    </form>
+    {% endif %}
+  </div>
 </div>
 
 <!-- Score actuel -->
 {% if project.security_score is not none %}
 <div class="score-banner score-banner-{{ score_to_color(project.security_score) }}">
-    <div class="score-banner-grade">{{ score_to_grade(project.security_score) }}</div>
-    <div>
-        <div class="score-banner-number">{{ project.security_score }}/100</div>
-        <div class="score-banner-label">Score de sécurité actuel</div>
+  <div class="score-banner-grade">{{ score_to_grade(project.security_score) }}</div>
+  <div>
+    <div class="score-banner-number">{{ project.security_score }}/100</div>
+    <div class="score-banner-label">Posture de securite (durcissement HTTP/TLS)</div>
+    <div class="score-banner-caption">
+      Mesure le niveau de durcissement de la configuration (headers, TLS, exposition).
+      Ce n'est pas une probabilite de compromission — voir le
+      <a href="{{ url_for('main.nis2_report', project_id=project.id) }}">rapport detaille</a>
+      pour la distinction entre vulnerabilites confirmees et recommandations.
     </div>
-    <div class="score-bar-container">
-        <div class="score-bar"
-             style="width:{{ project.security_score }}%;
-                    background:var(--color-{{ score_to_color(project.security_score) }});">
-        </div>
+  </div>
+  <div class="score-bar-container">
+    <div class="score-bar"
+         style="width:{{ project.security_score }}%;
+                background:var(--color-{{ score_to_color(project.security_score) }});">
     </div>
+  </div>
 </div>
 {% endif %}
 
-<!-- GRAPHIQUE D'ÉVOLUTION -->
+<!-- Section Membres du projet -->
+<div class="section">
+  <div class="section-header">
+    <h2><i class="fas fa-users"></i> Membres du projet</h2>
+    <div>
+      {% if project.user_id == current_user.id or project.is_manager(current_user.id) %}
+      <button class="btn btn-primary btn-sm" onclick="document.getElementById('addMemberForm').classList.toggle('hidden')">
+        <i class="fas fa-plus"></i> Ajouter
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ✅ Formulaire d'ajout de membres avec CSRF -->
+  <div id="addMemberForm" class="hidden" style="background: var(--color-surface-2); padding: 16px; border-radius: var(--radius-sm); margin-bottom: 16px; border: 1px solid var(--color-border);">
+    <form method="POST" action="{{ url_for('main.add_members', project_id=project.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group" style="margin-bottom: 10px;">
+        <label>Adresses email (separees par des virgules)</label>
+        <input type="text" name="emails" placeholder="alice@example.com, bob@example.com" class="form-control" style="width: 100%;">
+        <div class="form-hint">Saisissez les adresses email des developpeurs a ajouter.</div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-user-plus"></i> Ajouter</button>
+    </form>
+  </div>
+
+  <!-- Liste des membres -->
+  <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+    <div style="background: var(--color-primary-light); padding: 6px 14px; border-radius: 20px; border: 1px solid var(--color-primary); display: flex; align-items: center; gap: 6px;">
+      <strong>{{ project.owner.username }}</strong>
+      <span style="color: var(--color-text-3); font-size: 0.7rem;">(Createur)</span>
+    </div>
+    {% for pm in project.members %}
+      <div style="background: var(--color-surface-2); padding: 6px 14px; border-radius: 20px; border: 1px solid var(--color-border); display: flex; align-items: center; gap: 6px;">
+        <span>{{ pm.user.username }}</span>
+        <span style="color: var(--color-text-3); font-size: 0.6rem; text-transform: uppercase;">{{ pm.role }}</span>
+        {% if project.user_id == current_user.id or project.is_manager(current_user.id) %}
+          {% if pm.user_id != project.user_id %}
+            <!-- ✅ Formulaire retirer membre avec CSRF -->
+            <form method="POST" action="{{ url_for('main.remove_member', project_id=project.id, user_id=pm.user_id) }}" style="display: inline;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-danger" style="padding: 2px 8px; font-size: 0.65rem;" onclick="return confirm('Retirer {{ pm.user.username }} du projet ?')">
+                <i class="fas fa-times"></i>
+              </button>
+            </form>
+          {% endif %}
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  <div style="margin-top: 10px; font-size: 0.8rem; color: var(--color-text-3);">
+    <i class="fas fa-info-circle"></i>
+    {% if project.user_id == current_user.id %}
+      Vous etes le createur — vous pouvez gerer tous les membres.
+    {% elif project.is_manager(current_user.id) %}
+      Vous etes manager — vous pouvez ajouter et retirer des membres.
+    {% else %}
+      Vous etes membre — vous pouvez voir le projet mais pas gerer les membres.
+    {% endif %}
+  </div>
+</div>
+
+<style>
+.hidden { display: none; }
+.score-banner-caption {
+  font-size: 0.78rem;
+  color: var(--color-text-3);
+  margin-top: 4px;
+  max-width: 480px;
+  line-height: 1.4;
+}
+.score-banner-caption a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+</style>
+
+<!-- GRAPHIQUE -->
 {% if chart_labels and chart_labels != '[]' %}
 <section class="section">
-    <h2>📈 Évolution du score dans le temps</h2>
-    <div class="chart-container">
-        <canvas id="scoreChart"></canvas>
-    </div>
+  <h2><i class="fas fa-chart-line"></i> Evolution du score dans le temps</h2>
+  <div class="chart-container">
+    <canvas id="scoreChart"></canvas>
+  </div>
 </section>
 {% endif %}
 
@@ -51,142 +185,164 @@
 {% set open_tickets = tickets | selectattr('status', 'equalto', 'open') | list %}
 {% if open_tickets %}
 <section class="section">
-    <h2>Tickets de sécurité ouverts ({{ open_tickets|length }})</h2>
-    <div class="tickets-list">
-        {% for ticket in open_tickets %}
-        <div class="ticket-card ticket-{{ ticket.severity }}">
-            <div class="ticket-header">
-                <span class="severity-badge severity-{{ ticket.severity }}">
-                    {{ ticket.severity }}
-                </span>
-                <h3 class="ticket-title">{{ ticket.title }}</h3>
-            </div>
-            <p class="ticket-description">{{ ticket.description }}</p>
-            <form method="POST"
-                  action="{{ url_for('main.resolve_ticket', ticket_id=ticket.id) }}">
-                <button type="submit" class="btn btn-sm btn-outline">
-                    ✓ Marquer comme résolu
-                </button>
-            </form>
+  <h2>Tickets de securite ouverts ({{ open_tickets|length }})</h2>
+  <div class="tickets-list">
+    {% for ticket in open_tickets %}
+    <div class="ticket-card ticket-{{ ticket.severity }}">
+      <div class="ticket-header">
+        <span class="severity-badge severity-{{ ticket.severity }}">
+          {{ ticket.severity }}
+        </span>
+        <h3 class="ticket-title">{{ ticket.title }}</h3>
+        {% if ticket.assigned_to_list %}
+        <span style="margin-left:auto; font-size:0.75rem; color:var(--color-primary);">
+          <i class="fas fa-users"></i> 
+          {% for user in ticket.assigned_users %}
+            {{ user.username }}{% if not loop.last %}, {% endif %}
+          {% endfor %}
+        </span>
+        {% endif %}
+      </div>
+      <p class="ticket-description">{{ ticket.description }}</p>
+      
+      <!-- ✅ Formulaire d'assignation de tickets avec CSRF -->
+      <form method="POST" action="{{ url_for('main.assign_ticket', ticket_id=ticket.id) }}"
+            style="display:flex; gap:6px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <select name="user_ids" multiple
+                style="padding:5px 10px; background:var(--color-surface-2); border:1px solid var(--color-border);
+                       border-radius:var(--radius-xs); color:var(--color-text); font-size:0.78rem; min-width:200px; min-height:80px;">
+          {% for member in project.member_users %}
+          <option value="{{ member.id }}" {% if member.id in ticket.assigned_to_list %}selected{% endif %}>
+            {{ member.username }}
+          </option>
+          {% endfor %}
+          <option value="{{ project.owner.id }}" {% if project.owner.id in ticket.assigned_to_list %}selected{% endif %}>
+            {{ project.owner.username }} (Createur)
+          </option>
+        </select>
+        <div>
+          <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-user-check"></i> Assigner</button>
+          <span style="font-size:0.7rem; color:var(--color-text-3); display:block; margin-top:4px;">
+            Ctrl+clic pour selectionner plusieurs
+          </span>
         </div>
-        {% endfor %}
+      </form>
+      
+      <!-- ✅ Formulaire résoudre ticket avec CSRF -->
+      <form method="POST" action="{{ url_for('main.resolve_ticket', ticket_id=ticket.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-check"></i> Marquer comme resolu</button>
+      </form>
     </div>
+    {% endfor %}
+  </div>
 </section>
 {% endif %}
 
 <!-- Historique des scans -->
 <section class="section">
-    <h2>Historique des scans</h2>
-    {% if scans %}
-    {% for scan in scans %}
-    <div class="scan-item">
-        <div class="scan-header">
-            {% if scan.triggered_by and scan.triggered_by.startswith('auto:') %}
-                <span class="badge badge-auto">⚙️ Automatique — CI/CD</span>
-                <span class="scan-origin">Déclenché par GitHub Actions · commit {{ scan.triggered_by.split(':')[-1] }}</span>
-            {% elif scan.triggered_by and scan.triggered_by.startswith('manuel:') %}
-                <span class="badge badge-manual">🖱️ Manuel</span>
-                <span class="scan-origin">Lancé par {{ scan.triggered_by.split(':')[-1] }}</span>
-            {% else %}
-                <span class="scan-origin">Origine inconnue</span>
-            {% endif %}
-        </div>
-        <div class="scan-body">
-            <span class="scan-date">{{ scan.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
-            <span class="scan-score">{{ scan.score }}/100</span>
-            {% if scan.parsed_results %}
-            <span class="scan-nis2">NIS2 : {{ scan.parsed_results.nis2_score }}%</span>
-            {% endif %}
-        </div>
-
-        {% if scan.parsed_results and scan.parsed_results.checks %}
-        <div class="checks-grid">
-            {% for check in scan.parsed_results.checks %}
-            <div class="check-item check-{{ check.status }}">
-                <span class="check-icon">
-                    {% if check.status == 'pass' %}✓
-                    {% elif check.status == 'fail' %}✗
-                    {% else %}⚠{% endif %}
-                </span>
-                <div>
-                    <div class="check-name">{{ check.name }}</div>
-                    <div class="check-detail">{{ check.detail }}</div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
+  <h2>Historique des scans</h2>
+  {% if scans %}
+  {% for scan in scans %}
+  <div class="scan-item">
+    <div class="scan-header">
+      <span class="scan-date">{{ scan.created_at | local_time }}</span>
+      <span class="scan-score score-{{ score_to_color(scan.score) if scan.score else 'none' }}">
+        {{ scan.score if scan.score else '—' }}/100
+      </span>
     </div>
-    {% endfor %}
-    {% else %}
-    <p class="empty-text">Aucun scan effectué. Lance ton premier scan !</p>
+
+    {% if scan.parsed_results and scan.parsed_results.checks %}
+    <div class="checks-grid">
+      {% for check in scan.parsed_results.checks %}
+      <div class="check-item check-{{ check.status }}">
+        <span class="check-icon">
+          {% if check.status == 'pass' %}<i class="fas fa-check-circle"></i>
+          {% elif check.status == 'fail' %}<i class="fas fa-times-circle"></i>
+          {% else %}<i class="fas fa-exclamation-triangle"></i>{% endif %}
+        </span>
+        <div>
+          <div class="check-name">{{ check.name }}</div>
+          <div class="check-detail">{{ check.detail }}</div>
+          <!-- ✅ Affichage de la référence OWASP ASVS -->
+          {% set ref = get_owasp_ref(check.name) %}
+          {% if ref %}
+          <div style="font-size: 0.7rem; color: var(--color-text-3); margin-top: 4px;">
+            <i class="fas fa-book"></i> {{ ref }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
     {% endif %}
+  </div>
+  {% endfor %}
+  {% else %}
+  <p class="empty-text">Aucun scan effectue. Lance ton premier scan !</p>
+  {% endif %}
 </section>
 
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const labels  = {{ chart_labels | safe }};
-const scores  = {{ chart_scores | safe }};
-const nis2    = {{ chart_nis2   | safe }};
+  const labels  = {{ chart_labels | safe }};
+  const scores  = {{ chart_scores | safe }};
+  const nis2    = {{ chart_nis2   | safe }};
 
-if (labels.length > 0) {
+  if (labels.length > 0) {
     const ctx = document.getElementById('scoreChart').getContext('2d');
     new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: 'Score de sécurité',
-                    data: scores,
-                    borderColor: '#6366f1',
-                    backgroundColor: 'rgba(99,102,241,0.1)',
-                    borderWidth: 2,
-                    pointBackgroundColor: '#6366f1',
-                    pointRadius: 5,
-                    tension: 0.3,
-                    fill: true
-                },
-                {
-                    label: 'Conformité NIS2 (%)',
-                    data: nis2,
-                    borderColor: '#22c55e',
-                    backgroundColor: 'rgba(34,197,94,0.08)',
-                    borderWidth: 2,
-                    pointBackgroundColor: '#22c55e',
-                    pointRadius: 5,
-                    tension: 0.3,
-                    fill: true
-                }
-            ]
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Posture de securite',
+            data: scores,
+            borderColor: '#2563eb',
+            backgroundColor: 'rgba(37,99,235,0.08)',
+            borderWidth: 2,
+            pointBackgroundColor: '#2563eb',
+            pointRadius: 4,
+            tension: 0.3,
+            fill: true
+          },
+          {
+            label: 'Conformite NIS2 (%)',
+            data: nis2,
+            borderColor: '#16a34a',
+            backgroundColor: 'rgba(22,163,74,0.08)',
+            borderWidth: 2,
+            pointBackgroundColor: '#16a34a',
+            pointRadius: 4,
+            tension: 0.3,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            labels: { color: '#475569', font: { size: 13 } }
+          }
         },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    labels: { color: '#e2e8f0', font: { size: 13 } }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => `${ctx.dataset.label} : ${ctx.parsed.y}`
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    ticks: { color: '#8892a4' },
-                    grid:  { color: '#2d3050' }
-                },
-                y: {
-                    min: 0,
-                    max: 100,
-                    ticks: { color: '#8892a4' },
-                    grid:  { color: '#2d3050' }
-                }
-            }
+        scales: {
+          x: {
+            ticks: { color: '#94a3b8' },
+            grid:  { color: '#e2e8f0' }
+          },
+          y: {
+            min: 0,
+            max: 100,
+            ticks: { color: '#94a3b8' },
+            grid:  { color: '#e2e8f0' }
+          }
         }
+      }
     });
-}
+  }
 </script>
 {% endblock %}

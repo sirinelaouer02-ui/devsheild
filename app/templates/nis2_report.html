@@ -3,121 +3,317 @@
 
 {% block content %}
 <div class="page-header">
-    <div>
-        <h1>Rapport de conformité NIS2</h1>
-        <p class="page-subtitle">{{ project.name }} — {{ project.url }}</p>
-    </div>
-    <div class="header-actions">
-        <a href="{{ url_for('main.project_detail', project_id=project.id) }}"
-           class="btn btn-outline">← Retour</a>
-        {% if scan %}
-        <a href="{{ url_for('main.nis2_pdf', project_id=project.id) }}"
-           class="btn btn-outline">📄 Télécharger le PDF</a>
-        {% endif %}
-        <form method="POST"
-              action="{{ url_for('main.run_scan', project_id=project.id) }}">
-            <button type="submit" class="btn btn-primary">🔍 Mettre à jour le scan</button>
-        </form>
-    </div>
+  <div>
+    <h1>Rapport de conformité NIS2</h1>
+    <p class="page-subtitle">{{ project.name }} — {{ project.url }}</p>
+  </div>
+  <div class="header-actions">
+    <a href="{{ url_for('main.project_detail', project_id=project.id) }}"
+       class="btn btn-outline"><i class="fas fa-arrow-left"></i> Retour</a>
+    {% if scan %}
+    <a href="{{ url_for('main.nis2_pdf', project_id=project.id) }}"
+       class="btn btn-outline"><i class="fas fa-file-pdf"></i> Télécharger le PDF</a>
+    {% endif %}
+    <form method="POST"
+          action="{{ url_for('main.run_scan', project_id=project.id) }}">
+      <button type="submit" class="btn btn-primary"><i class="fas fa-sync-alt"></i> Mettre à jour le scan</button>
+    </form>
+  </div>
 </div>
 
 {% if not scan %}
 <div class="empty-state">
-    <div class="empty-icon">📋</div>
-    <h2>Aucun scan disponible</h2>
-    <p>Lance un scan pour générer le rapport NIS2.</p>
-    <form method="POST" action="{{ url_for('main.run_scan', project_id=project.id) }}">
-        <button type="submit" class="btn btn-primary">Lancer le premier scan</button>
-    </form>
+  <div class="empty-icon"><i class="fas fa-clipboard-list"></i></div>
+  <h2>Aucun scan disponible</h2>
+  <p>Lance un scan pour générer le rapport NIS2.</p>
+  <form method="POST" action="{{ url_for('main.run_scan', project_id=project.id) }}">
+    <button type="submit" class="btn btn-primary">Lancer le premier scan</button>
+  </form>
 </div>
 
 {% else %}
 
+<!-- ============================================================ -->
+<!-- RESUME EXECUTIF                                               -->
+<!-- ============================================================ -->
+{% set all_tickets = scan.parsed_results.tickets if scan.parsed_results and scan.parsed_results.tickets else [] %}
+{% set all_checks  = scan.parsed_results.checks  if scan.parsed_results and scan.parsed_results.checks  else [] %}
+{% set confidence  = scan.parsed_results.scan_confidence if scan.parsed_results and scan.parsed_results.scan_confidence is defined else none %}
+{% set confirmed_count = scan.parsed_results.confirmed_vulnerabilities_count if scan.parsed_results and scan.parsed_results.confirmed_vulnerabilities_count is defined else none %}
+
+{% set critical_tickets = all_tickets | selectattr('severity', 'equalto', 'critical') | list %}
+{% set high_tickets     = all_tickets | selectattr('severity', 'equalto', 'high')     | list %}
+{% set medium_tickets   = all_tickets | selectattr('severity', 'equalto', 'medium')   | list %}
+{% set low_tickets      = all_tickets | selectattr('severity', 'equalto', 'low')      | list %}
+
+{% set confirmed_critical = all_tickets | selectattr('severity', 'equalto', 'critical') | selectattr('evidence', 'equalto', 'confirmed') | list %}
+{% set confirmed_high     = all_tickets | selectattr('severity', 'equalto', 'high')     | selectattr('evidence', 'equalto', 'confirmed') | list %}
+
+{% if confirmed_critical %}
+  {% set risk_level = 'Élevé' %}
+  {% set risk_class = 'risk-high' %}
+{% elif confirmed_high or critical_tickets %}
+  {% set risk_level = 'Moyen' %}
+  {% set risk_class = 'risk-medium' %}
+{% else %}
+  {% set risk_level = 'Faible' %}
+  {% set risk_class = 'risk-low' %}
+{% endif %}
+
+{% set conformes_count   = nis2_details | selectattr('status', 'equalto', 'conforme')     | list | length %}
+{% set partiels_count    = nis2_details | selectattr('status', 'equalto', 'partiel')      | list | length %}
+{% set non_conformes_count = nis2_details | selectattr('status', 'equalto', 'non_conforme') | list | length %}
+
+{% set points_forts = all_checks | selectattr('status', 'equalto', 'pass') | list %}
+{% set points_a_ameliorer = all_tickets | rejectattr('severity', 'equalto', 'low') | list %}
+{% if points_a_ameliorer|length == 0 %}
+  {% set points_a_ameliorer = all_tickets %}
+{% endif %}
+
+<section class="section exec-summary">
+  <h2><i class="fas fa-file-signature"></i> Résumé exécutif</h2>
+
+  <div class="exec-summary-grid">
+    <div class="exec-stat">
+      <div class="exec-stat-label">Niveau de risque</div>
+      <div class="exec-stat-value {{ risk_class }}">{{ risk_level }}</div>
+    </div>
+    <div class="exec-stat">
+      <div class="exec-stat-label">Conformité NIS2</div>
+      <div class="exec-stat-value">{{ nis2_score }}%</div>
+    </div>
+    <div class="exec-stat">
+      <div class="exec-stat-label">Critères conformes</div>
+      <div class="exec-stat-value">{{ conformes_count }} / {{ nis2_details|length }}</div>
+    </div>
+    {% if confidence is not none %}
+    <div class="exec-stat">
+      <div class="exec-stat-label">Fiabilité du scan</div>
+      <div class="exec-stat-value">{{ confidence }}%</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="exec-summary-grid exec-summary-grid-secondary">
+    <div class="exec-stat exec-stat-sm">
+      <span class="severity-badge severity-critical">{{ critical_tickets|length }}</span> critique(s)
+    </div>
+    <div class="exec-stat exec-stat-sm">
+      <span class="severity-badge severity-high">{{ high_tickets|length }}</span> élevé(s)
+    </div>
+    <div class="exec-stat exec-stat-sm">
+      <span class="severity-badge severity-medium">{{ medium_tickets|length }}</span> moyen(s)
+    </div>
+    <div class="exec-stat exec-stat-sm">
+      <span class="severity-badge severity-low">{{ low_tickets|length }}</span> faible(s)
+    </div>
+    {% if confirmed_count is not none %}
+    <div class="exec-stat exec-stat-sm">
+      <i class="fas fa-shield-alt"></i> {{ confirmed_count }} vulnérabilité(s) confirmée(s) par preuve de contenu
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="exec-summary-columns">
+    {% if points_forts %}
+    <div class="exec-col exec-col-good">
+      <h3><i class="fas fa-check-circle"></i> Points forts</h3>
+      <ul>
+        {% for check in points_forts[:6] %}
+        <li>{{ check.name }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {% if points_a_ameliorer %}
+    <div class="exec-col exec-col-improve">
+      <h3><i class="fas fa-tools"></i> Points à améliorer</h3>
+      <ul>
+        {% for ticket in points_a_ameliorer[:6] %}
+        <li>
+          <span class="severity-badge severity-{{ ticket.severity }}">{{ ticket.severity }}</span>
+          {{ ticket.title }}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+
+  <p class="exec-summary-disclaimer">
+    <i class="fas fa-info-circle"></i>
+    Ce score mesure principalement le niveau de durcissement de la configuration
+    (headers HTTP, TLS, exposition de fichiers/endpoints) et ne représente pas une
+    probabilité réelle de compromission. DevShield ne remplace pas un audit de
+    sécurité complet ni des tests d'intrusion manuels.
+  </p>
+</section>
+
+<style>
+.exec-summary {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 20px 24px;
+}
+.exec-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin: 14px 0;
+}
+.exec-summary-grid-secondary {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  margin-top: 4px;
+}
+.exec-stat {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xs);
+  padding: 10px 14px;
+}
+.exec-stat-label {
+  font-size: 0.72rem;
+  color: var(--color-text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 4px;
+}
+.exec-stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+.exec-stat-sm {
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.risk-high   { color: var(--color-danger, #dc2626); }
+.risk-medium { color: var(--color-warning, #d97706); }
+.risk-low    { color: var(--color-success, #16a34a); }
+.exec-summary-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  margin-top: 18px;
+}
+.exec-col h3 {
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+.exec-col ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.exec-col li {
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.exec-col-good h3 { color: var(--color-success, #16a34a); }
+.exec-col-improve h3 { color: var(--color-warning, #d97706); }
+.exec-summary-disclaimer {
+  font-size: 0.75rem;
+  color: var(--color-text-3);
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  line-height: 1.5;
+}
+</style>
+
 <!-- Score NIS2 global -->
 <div class="nis2-banner {% if nis2_score >= 75 %}nis2-green{% elif nis2_score >= 50 %}nis2-orange{% else %}nis2-red{% endif %}">
-    <div class="nis2-banner-left">
-        <div class="nis2-score-big">{{ nis2_score }}%</div>
-        <div class="nis2-score-label">Conformité NIS2</div>
-    </div>
-    <div class="nis2-banner-right">
-        <p><strong>Directive NIS2 (Network and Information Security)</strong></p>
-        <p>Obligatoire pour les opérateurs de services numériques comme Lenergy Smart.
-           Article 21 impose des mesures techniques de cybersécurité.</p>
-        <p class="nis2-scan-date">
-            Dernier scan : {{ scan.created_at.strftime('%d/%m/%Y à %H:%M') }}
-        </p>
-    </div>
-    <div class="nis2-bar-container">
-        <div class="nis2-bar" style="width: {{ nis2_score }}%"></div>
-    </div>
+  <div class="nis2-banner-left">
+    <div class="nis2-score-big">{{ nis2_score }}%</div>
+    <div class="nis2-score-label">Conformité NIS2</div>
+  </div>
+  <div class="nis2-banner-right">
+    <p><strong>Directive NIS2 (Network and Information Security)</strong></p>
+    <p>Obligatoire pour les opérateurs de services numériques comme Lenergy Smart.
+       Article 21 impose des mesures techniques de cybersécurité.</p>
+    <p class="nis2-scan-date">
+      Dernier scan : {{ scan.created_at | local_time }}
+    </p>
+  </div>
+  <div class="nis2-bar-container">
+    <div class="nis2-bar" style="width: {{ nis2_score }}%"></div>
+  </div>
 </div>
 
 <!-- Détail des critères NIS2 -->
 <section class="section">
-    <h2>Analyse par critère NIS2</h2>
+  <h2>Analyse par critère NIS2</h2>
 
-    {% if nis2_details %}
-    <div class="nis2-criteria-list">
-        {% for criterion in nis2_details %}
-        <div class="nis2-criterion nis2-criterion-{{ criterion.status }}">
-            <div class="nis2-criterion-header">
-                <div class="nis2-status-badge nis2-badge-{{ criterion.status }}">
-                    {% if criterion.status == 'conforme' %}✓ Conforme
-                    {% elif criterion.status == 'partiel' %}⚠ Partiel
-                    {% else %}✗ Non conforme{% endif %}
-                </div>
-                <h3 class="nis2-criterion-title">{{ criterion.label }}</h3>
-            </div>
-            <p class="nis2-criterion-desc">{{ criterion.description }}</p>
-            <div class="nis2-checks-involved">
-                <span class="nis2-checks-label">Checks impliqués :</span>
-                {% for check in criterion.checks %}
-                <span class="nis2-check-tag">{{ check }}</span>
-                {% endfor %}
-            </div>
+  {% if nis2_details %}
+  <div class="nis2-criteria-list">
+    {% for criterion in nis2_details %}
+    <div class="nis2-criterion nis2-criterion-{{ criterion.status }}">
+      <div class="nis2-criterion-header">
+        <div class="nis2-status-badge nis2-badge-{{ criterion.status }}">
+          {% if criterion.status == 'conforme' %}<i class="fas fa-check-circle"></i> Conforme
+          {% elif criterion.status == 'partiel' %}<i class="fas fa-exclamation-triangle"></i> Partiel
+          {% else %}<i class="fas fa-times-circle"></i> Non conforme{% endif %}
         </div>
+        <h3 class="nis2-criterion-title">{{ criterion.label }}</h3>
+      </div>
+      <p class="nis2-criterion-desc">{{ criterion.description }}</p>
+      <div class="nis2-checks-involved">
+        <span class="nis2-checks-label">Checks impliqués :</span>
+        {% for check in criterion.checks %}
+        <span class="nis2-check-tag">{{ check }}</span>
         {% endfor %}
+      </div>
     </div>
+    {% endfor %}
+  </div>
 
-    {% else %}
-    <p class="empty-text">Relance un scan pour obtenir l'analyse NIS2 détaillée.</p>
-    {% endif %}
+  {% else %}
+  <p class="empty-text">Relance un scan pour obtenir l'analyse NIS2 détaillée.</p>
+  {% endif %}
 </section>
 
 <!-- Recommandations -->
 <section class="section">
-    <h2>Recommandations prioritaires</h2>
-    <div class="recommendations-list">
-        {% set non_conformes = nis2_details | selectattr('status', 'equalto', 'non_conforme') | list %}
-        {% set partiels = nis2_details | selectattr('status', 'equalto', 'partiel') | list %}
+  <h2>Recommandations prioritaires</h2>
+  <div class="recommendations-list">
+    {% set non_conformes = nis2_details | selectattr('status', 'equalto', 'non_conforme') | list %}
+    {% set partiels = nis2_details | selectattr('status', 'equalto', 'partiel') | list %}
 
-        {% if non_conformes %}
-            {% for item in non_conformes %}
-            <div class="recommendation recommendation-critical">
-                <span class="reco-priority">PRIORITÉ HAUTE</span>
-                <strong>{{ item.label }}</strong>
-                <p>{{ item.description }}</p>
-            </div>
-            {% endfor %}
-        {% endif %}
+    {% if non_conformes %}
+      {% for item in non_conformes %}
+      <div class="recommendation recommendation-critical">
+        <span class="reco-priority"><i class="fas fa-exclamation-circle"></i> PRIORITÉ HAUTE</span>
+        <strong>{{ item.label }}</strong>
+        <p>{{ item.description }}</p>
+      </div>
+      {% endfor %}
+    {% endif %}
 
-        {% if partiels %}
-            {% for item in partiels %}
-            <div class="recommendation recommendation-medium">
-                <span class="reco-priority">PRIORITÉ MOYENNE</span>
-                <strong>{{ item.label }}</strong>
-                <p>{{ item.description }}</p>
-            </div>
-            {% endfor %}
-        {% endif %}
+    {% if partiels %}
+      {% for item in partiels %}
+      <div class="recommendation recommendation-medium">
+        <span class="reco-priority"><i class="fas fa-exclamation-triangle"></i> PRIORITÉ MOYENNE</span>
+        <strong>{{ item.label }}</strong>
+        <p>{{ item.description }}</p>
+      </div>
+      {% endfor %}
+    {% endif %}
 
-        {% if not non_conformes and not partiels %}
-        <div class="recommendation recommendation-ok">
-            ✓ Tous les critères NIS2 analysés sont conformes. Maintiens cette conformité
-            en relançant des scans régulièrement.
-        </div>
-        {% endif %}
+    {% if not non_conformes and not partiels %}
+    <div class="recommendation recommendation-ok">
+      <i class="fas fa-check-circle"></i> Tous les critères NIS2 analysés sont conformes. Maintiens cette conformité
+      en relançant des scans régulièrement.
     </div>
+    {% endif %}
+  </div>
 </section>
 
 {% endif %}

@@ -1,39 +1,67 @@
-{% extends 'base.html' %}
+{% extends "auth_base.html" %}
+
 {% block title %}Inscription — DevShield{% endblock %}
 
 {% block content %}
-<div class="auth-container">
-    <div class="auth-card">
-        <div class="auth-header">
-            <span class="shield-icon-large">🛡️</span>
-            <h1>Créer un compte</h1>
-            <p>Rejoins DevShield</p>
+<div class="auth-page">
+    <div class="auth-left">
+        <div class="auth-left-content">
+            <div class="auth-brand">
+                <div class="auth-brand-icon">D</div>
+                <div class="auth-brand-name">DevShield</div>
+            </div>
+            <h1 class="auth-headline">
+                Rejoignez DevShield<br>
+                <span>et sécurisez vos applications</span>
+            </h1>
+            <p class="auth-desc">
+                Créez votre compte pour commencer à analyser la sécurité
+                de vos sites web et applications.
+            </p>
+            <div class="auth-features">
+                <div class="auth-feature">
+                    <span class="auth-feature-icon green">✓</span>
+                    Scanner de sécurité gratuit
+                </div>
+                <div class="auth-feature">
+                    <span class="auth-feature-icon purple">✓</span>
+                    Conformité NIS2
+                </div>
+                <div class="auth-feature">
+                    <span class="auth-feature-icon orange">✓</span>
+                    Rapports et tickets de sécurité
+                </div>
+            </div>
         </div>
-
-        <form method="POST" action="{{ url_for('auth.register') }}">
-            <div class="form-group">
-                <label for="username">Nom d'utilisateur</label>
-                <input type="text" id="username" name="username" required minlength="3" placeholder="Minimum 3 caractères">
+    </div>
+    <div class="auth-right">
+        <div class="auth-form-box">
+            <h2 class="auth-form-title">Inscription</h2>
+            <p class="auth-form-sub">Créez votre compte gratuitement</p>
+            
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <label for="username">Nom d'utilisateur</label>
+                    <input type="text" id="username" name="username" placeholder="johndoe" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="vous@exemple.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Mot de passe</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full btn-lg">
+                    <i class="fas fa-user-plus"></i> S'inscrire
+                </button>
+            </form>
+            
+            <div class="auth-footer">
+                Déjà un compte ? <a href="{{ url_for('auth.login') }}" style="color:var(--color-primary);font-weight:600;">Se connecter</a>
             </div>
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" required placeholder="ton@email.com">
-            </div>
-            <div class="form-group">
-                <label for="password">Mot de passe</label>
-                <input type="password" id="password" name="password" required minlength="8" placeholder="Minimum 8 caractères">
-            </div>
-            <div class="form-group">
-                <label for="confirm_password">Confirmer le mot de passe</label>
-                <input type="password" id="confirm_password" name="confirm_password" required placeholder="Répète ton mot de passe">
-            </div>
-            <button type="submit" class="btn btn-primary btn-full">Créer mon compte</button>
-        </form>
-
-        <p class="auth-footer">
-            Déjà un compte ?
-            <a href="{{ url_for('auth.login') }}">Se connecter</a>
-        </p>
+        </div>
     </div>
 </div>
 {% endblock %}
