@@ -23,5 +23,5 @@ qrcode==7.4.2
 pillow==12.3.0
 weasyprint==61.2
 cryptography==41.0.7
-pydantic==2.4.0
+pydantic==2.3.0
 pyopenssl==26.0.0
