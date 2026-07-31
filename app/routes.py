@@ -384,11 +384,13 @@ def nis2_report(project_id):
         nis2_status_color=nis2_status_color
     )
 
+
 @main_bp.route('/project/<int:project_id>/nis2/pdf')
 @login_required
 def nis2_pdf(project_id):
     flash(' La génération de PDF est désactivée. Utilisez le rapport HTML pour vos présentations.', 'info')
     return redirect(url_for('main.nis2_report', project_id=project_id))
+
 
 @main_bp.route('/ticket/<int:ticket_id>/resolve', methods=['POST'])
 @login_required
@@ -613,6 +615,10 @@ def delete_project(project_id):
     return redirect(url_for('main.dashboard'))
 
 
+# ============================================================
+# PLANIFICATION DES SCANS
+# ============================================================
+
 @main_bp.route('/project/<int:project_id>/schedule', methods=['GET', 'POST'])
 @login_required
 def schedule_scan(project_id):
@@ -688,11 +694,12 @@ def unschedule_scan(project_id):
         db.session.add(log)
         db.session.commit()
         
-        flash('Scan désactivé.', 'info')
+        flash('Scan désactivé avec succès.', 'info')
     else:
         flash('Aucune planification trouvée.', 'warning')
     
-    return redirect(url_for('main.project_detail', project_id=project.id))
+    # ✅ Redirige vers la page de planification pour voir le changement
+    return redirect(url_for('main.schedule_scan', project_id=project.id))
 
 
 # ============================================================
